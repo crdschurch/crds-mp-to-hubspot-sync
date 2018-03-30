@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Crossroads.Web.Common" Version="1.1.13" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Crossroads.Service.HubSpot.Sync.LiteDB\Crossroads.Service.HubSpot.Sync.LiteDB.csproj" />
+  </ItemGroup>
+
+</Project>

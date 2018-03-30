@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Crossroads.Service.HubSpot.Sync.Core.Serialization;
 using Crossroads.Service.HubSpot.Sync.Data.MP.Dto;
 using Crossroads.Web.Common.MinistryPlatform;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json.Linq;
 
 namespace Crossroads.Service.HubSpot.Sync.Data.MP.Impl
 {
@@ -11,12 +13,18 @@ namespace Crossroads.Service.HubSpot.Sync.Data.MP.Impl
     {
         private readonly IMinistryPlatformRestRequestBuilderFactory _mpRestBuilder;
         private readonly IApiUserRepository _apiUserRepository;
+        private readonly IJsonSerializer _jsonSerializer;
         private readonly ILogger<MinistryPlatformContactRepository> _logger;
 
-        public MinistryPlatformContactRepository(IMinistryPlatformRestRequestBuilderFactory mpRestBuilder, IApiUserRepository apiUserRepository, ILogger<MinistryPlatformContactRepository> logger)
+        public MinistryPlatformContactRepository(
+            IMinistryPlatformRestRequestBuilderFactory mpRestBuilder,
+            IApiUserRepository apiUserRepository,
+            IJsonSerializer jsonSerializer,
+            ILogger<MinistryPlatformContactRepository> logger)
         {
             _mpRestBuilder = mpRestBuilder ?? throw new ArgumentNullException(nameof(mpRestBuilder));
             _apiUserRepository = apiUserRepository ?? throw new ArgumentNullException(nameof(apiUserRepository));
+            _jsonSerializer = jsonSerializer ?? throw new ArgumentNullException(nameof(jsonSerializer));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
@@ -29,12 +37,15 @@ last successful sync date: {lastSuccessfulSyncDate}");
 
             var token = _apiUserRepository.GetDefaultApiUserToken();
             var parameters = new Dictionary<string, object> { { "@LastSuccessfulSyncDate", lastSuccessfulSyncDate } };
-            return _mpRestBuilder.NewRequestBuilder()
+            var data = _mpRestBuilder.NewRequestBuilder()
                 .WithAuthenticationToken(token)
                 .Build()
-                .ExecuteStoredProc<NewlyRegisteredContactDto>(newlyRegisteredContactsStoredProc, parameters)
+                .ExecuteStoredProc<JObject>(newlyRegisteredContactsStoredProc, parameters)
                 .FirstOrDefault(); // unwraps/accommodates SQL Server's ability return multiple result sets in a single query...
                                    // ...represented as a list of lists
+
+            return data?.Select(jObject => _jsonSerializer.ToObject<NewlyRegisteredContactDto>(jObject)).ToList()
+                ?? Enumerable.Empty<NewlyRegisteredContactDto>().ToList();
         }
     }
 }

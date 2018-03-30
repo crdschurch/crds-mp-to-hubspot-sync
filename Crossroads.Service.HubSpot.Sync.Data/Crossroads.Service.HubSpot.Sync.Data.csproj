@@ -9,6 +9,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Crossroads.Service.HubSpot.Sync.Core\Crossroads.Service.HubSpot.Sync.Core.csproj" />
     <ProjectReference Include="..\Crossroads.Service.HubSpot.Sync.LiteDB\Crossroads.Service.HubSpot.Sync.LiteDB.csproj" />
   </ItemGroup>
 

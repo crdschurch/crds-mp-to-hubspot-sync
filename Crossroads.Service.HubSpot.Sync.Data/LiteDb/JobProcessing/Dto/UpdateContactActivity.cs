@@ -4,15 +4,15 @@ using LiteDB;
 
 namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto
 {
-    public class JobActivityDto
+    public class UpdateContactActivity : IActivity
     {
-        public JobActivityDto()
+        public UpdateContactActivity()
         {
-            FailedBatches = new List<FailedBatchDto>();
+            FailedBatches = new List<FailedBatch>();
         }
 
         [BsonField("_id")]
-        public string Id => $"JobActivity_{ActivityDateTime:u}"; // ISO8601: universal/sortable
+        public string Id => $"UpdateContactActivity_{ActivityDateTime:u}"; // ISO8601: universal/sortable
 
         public DateTime ActivityDateTime { get; set; }
 
@@ -22,6 +22,6 @@ namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto
 
         public int FailureCount { get; set; }
 
-        public List<FailedBatchDto> FailedBatches { get; set; }
+        public List<FailedBatch> FailedBatches { get; set; }
     }
 }

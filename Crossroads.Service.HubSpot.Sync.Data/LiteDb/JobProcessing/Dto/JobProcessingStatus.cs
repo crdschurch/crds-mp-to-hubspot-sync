@@ -4,7 +4,7 @@ using LiteDB;
 
 namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto
 {
-    public struct JobProcessingStatusDto : IKeyValuePair<string, JobProcessingState>
+    public struct JobProcessingStatus : IKeyValuePair<string, JobProcessingState>
     {
         [BsonField("_id")]
         public string Key => "JobProcessingStatus";

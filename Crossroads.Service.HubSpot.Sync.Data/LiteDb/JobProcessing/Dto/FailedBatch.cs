@@ -2,7 +2,7 @@
 
 namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto
 {
-    public class FailedBatchDto
+    public class FailedBatch
     {
         public int Count { get; set; }
 

@@ -8,6 +8,6 @@ namespace Crossroads.Service.HubSpot.Sync.Core.Utilities
     /// </summary>
     public interface IHttpPost
     {
-        Task<HttpResponseMessage> PostAsync<TDto>(string requestUriPathAndQuery, TDto postBody);
+        HttpResponseMessage Post<TDto>(string requestUriPathAndQuery, TDto postBody);
     }
 }

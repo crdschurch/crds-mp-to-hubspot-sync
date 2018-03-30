@@ -19,14 +19,14 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Configuration.Impl
 
         public DateTime GetLastSuccessfulSyncDate()
         {
-            var key = default(LastSuccessfulSyncDateDto).Key;
-            var storedDateTime = _liteDbConfigurationProvider.GetConfiguration<LastSuccessfulSyncDateDto, DateTime>();
+            var key = default(LastSuccessfulSyncDate).Key;
+            var storedDateTime = _liteDbConfigurationProvider.GetConfiguration<LastSuccessfulSyncDate, DateTime>();
             return (storedDateTime != default(DateTime)) ? storedDateTime : DateTime.Parse(_appSettings[key]);
         }
 
         public JobProcessingState GetCurrentJobProcessingState()
         {
-            return _liteDbConfigurationProvider.GetConfiguration<JobProcessingStatusDto, JobProcessingState>();
+            return _liteDbConfigurationProvider.GetConfiguration<JobProcessingStatus, JobProcessingState>();
         }
     }
 }

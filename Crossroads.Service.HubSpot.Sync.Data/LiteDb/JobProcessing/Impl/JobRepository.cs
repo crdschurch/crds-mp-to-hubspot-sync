@@ -16,17 +16,17 @@ namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Impl
 
         public bool SetLastSuccessfulSyncDate(DateTime dateTime)
         {
-            return _liteDbRepository.Upsert(new LastSuccessfulSyncDateDto {Value = dateTime});
+            return _liteDbRepository.Upsert(new LastSuccessfulSyncDate {Value = dateTime});
         }
 
         public bool SetJobProcessingState(JobProcessingState jobProcessingState)
         {
-            return _liteDbRepository.Upsert(new JobProcessingStatusDto { Value = jobProcessingState });
+            return _liteDbRepository.Upsert(new JobProcessingStatus { Value = jobProcessingState });
         }
 
-        public bool StoreJobActivity(JobActivityDto activityDto)
+        public bool StoreJobActivity(IActivity activity)
         {
-            return _liteDbRepository.Upsert(activityDto);
+            return _liteDbRepository.Upsert(activity);
         }
     }
 }

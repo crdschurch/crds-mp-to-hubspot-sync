@@ -39,9 +39,9 @@ namespace Crossroads.Service.HubSpot.Sync.App
             // load environment variable from .env for local development
             try
             {
-                var runner = serviceProvider.GetService<ICreateNewMpRegistrationsInHubSpot>();
+                var newMpContactsToHubSpotJob = serviceProvider.GetService<ICreateNewMpRegistrationsInHubSpot>();
 
-                runner.ExecuteAsync();
+                newMpContactsToHubSpotJob.Execute();
             }
             catch (Exception e)
             {

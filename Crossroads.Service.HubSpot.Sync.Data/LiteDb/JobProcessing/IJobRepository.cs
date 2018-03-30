@@ -11,6 +11,6 @@ namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing
 
         bool SetJobProcessingState(JobProcessingState jobProcessingState);
 
-        bool StoreJobActivity(JobActivityDto activityDto);
+        bool StoreJobActivity(IActivity activity);
     }
 }

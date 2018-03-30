@@ -1,6 +1,4 @@
 ﻿
-using System.Threading.Tasks;
-
 namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services
 {
     /// <summary>
@@ -11,6 +9,6 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services
         /// <summary>
         /// Fire off!!!!
         /// </summary>
-        Task ExecuteAsync();
+        void Execute();
     }
 }

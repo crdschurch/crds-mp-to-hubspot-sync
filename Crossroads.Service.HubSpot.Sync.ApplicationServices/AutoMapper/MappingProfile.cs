@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using AutoMapper;
 using Crossroads.Service.HubSpot.Sync.Data.HubSpot.Models;
 using Crossroads.Service.HubSpot.Sync.Data.MP.Dto;
@@ -14,7 +15,7 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.AutoMapper
                 .ForMember(hubSpotContact => hubSpotContact.Email, memberOptions => memberOptions.MapFrom(dto => dto.Email))
                 .ForMember(hubSpotContact => hubSpotContact.Properties, memberOptions =>
                     memberOptions.MapFrom( dto =>
-                        new []
+                        new List<ContactProperty>
                         {
                             new ContactProperty
                             {

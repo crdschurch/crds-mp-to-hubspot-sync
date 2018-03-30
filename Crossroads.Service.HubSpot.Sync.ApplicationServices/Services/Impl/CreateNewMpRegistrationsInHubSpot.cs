@@ -6,6 +6,7 @@ using Crossroads.Service.HubSpot.Sync.Core.Logging;
 using Crossroads.Service.HubSpot.Sync.Core.Time;
 using Crossroads.Service.HubSpot.Sync.Data.HubSpot.Models;
 using Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing;
+using Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto;
 using Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Enum;
 using Crossroads.Service.HubSpot.Sync.Data.MP;
 using Microsoft.Extensions.Logging;
@@ -40,7 +41,7 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public async Task ExecuteAsync()
+        public void Execute()
         {
             var timeJustBeforeTheProcessKickedOff = _clock.Now;
             try
@@ -71,14 +72,14 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
                 _logger.LogDebug("Mapping complete.");
 
                 _logger.LogInformation("Creating newly registered MP contacts in HubSpot...");
-                var jobActivityDto = await _hubSpotContactCreatorUpdater.CreateOrUpdateAsync(hubSpotContacts).ConfigureAwait(false);
+                var activity = _hubSpotContactCreatorUpdater.BulkCreateOrUpdate(hubSpotContacts, new NewContactActivity { ActivityDateTime = lastSuccessfulSyncDate});
                 _logger.LogInformation("Creation complete.");
 
-                jobActivityDto.ActivityDateTime = lastSuccessfulSyncDate;
+                _jobRepository.StoreJobActivity(activity);
                 // reset the last successful sync date to the date time we grab just before starting this whole process
                 // *** IF *** all batches were completed successfully or there was nothing to do.
 
-                if (jobActivityDto.TotalContacts == 0) // nothing to do on this run
+                if (activity.TotalContacts == 0) // nothing to do on this run
                 {
                     _logger.LogWarning("0 newly registered contacts to sync to HubSpot on this run. Exiting...");
                     _jobRepository.SetLastSuccessfulSyncDate(timeJustBeforeTheProcessKickedOff);
@@ -86,20 +87,28 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
                     return;
                 }
 
-                if (jobActivityDto.SuccessCount == jobActivityDto.TotalContacts)
+                if (activity.SuccessCount == activity.TotalContacts) // everyone synced
                 {
                     _logger.LogWarning("100% success! Don't get used to it.");
                     _jobRepository.SetLastSuccessfulSyncDate(timeJustBeforeTheProcessKickedOff);
-                }
-
-                // nothing succeeded, do not update the last successful sync date. simply re-reun with the previous sync date on the next run.
-                if (jobActivityDto.FailureCount == jobActivityDto.TotalContacts)
-                {
-                    _logger.LogWarning($"{0} of {jobActivityDto.TotalContacts} contacts synced successfully.");
                     SetJobProcessingStateToIdle();
                     return;
                 }
 
+                // do not update the last successful sync date. simply re-reun with the previous sync date on the next run.
+                if (activity.FailureCount == activity.TotalContacts) // everyone failed to sync
+                {
+                    _logger.LogWarning($"0 of {activity.TotalContacts} failed to sync.");
+                    SetJobProcessingStateToIdle();
+                    return;
+                }
+
+                // mixed bag -- keep going, try to pare it down more
+                _logger.LogWarning($"{activity.SuccessCount} succeeded and {activity.FailureCount} failed out of {activity.TotalContacts} contacts.");
+                var finalVersionOfActivity = _hubSpotContactCreatorUpdater.RetryBulkCreate(activity);
+                _jobRepository.StoreJobActivity(finalVersionOfActivity);
+                _jobRepository.SetLastSuccessfulSyncDate(timeJustBeforeTheProcessKickedOff);
+                SetJobProcessingStateToIdle();
             }
             catch (Exception exc)
             {

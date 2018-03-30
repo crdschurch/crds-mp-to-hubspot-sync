@@ -53,6 +53,11 @@ json: {serializedInput}");
             }
         }
 
+        public T ToObject<T>(JObject jObject)
+        {
+            return jObject.ToObject<T>();
+        }
+
         /// <summary>
         /// Serializes a type (simple or complex) to a JSON string.
         /// </summary>

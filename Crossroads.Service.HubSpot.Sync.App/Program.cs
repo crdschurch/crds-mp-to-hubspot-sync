@@ -14,11 +14,13 @@ using Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing;
 using Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Impl;
 using Crossroads.Service.HubSpot.Sync.Data.MP;
 using Crossroads.Service.HubSpot.Sync.Data.MP.Impl;
+using Crossroads.Service.HubSpot.Sync.Data.MP.Web.Common;
 using Crossroads.Service.HubSpot.Sync.LiteDb.Configuration;
 using Crossroads.Service.HubSpot.Sync.LiteDb.Configuration.Impl;
 using Crossroads.Service.HubSpot.Sync.LiteDB;
 using Crossroads.Service.HubSpot.Sync.LiteDB.Impl;
 using Crossroads.Web.Common.Configuration;
+using Flurl;
 using LiteDB;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -68,7 +70,7 @@ namespace Crossroads.Service.HubSpot.Sync.App
             // define
             services.AddAutoMapper();
 
-            CrossroadsWebCommonConfig.Register(services);
+            CrossroadsWebCommonConfig_Register(services); // temp solution for debugging
 
             services.AddSingleton<ILoggerFactory, LoggerFactory>();
             services.AddLogging();
@@ -106,6 +108,26 @@ namespace Crossroads.Service.HubSpot.Sync.App
                 .AddDebug();
 
             return serviceProvider;
+        }
+
+        private static void CrossroadsWebCommonConfig_Register(IServiceCollection services)
+        {
+            var authRestClient = new HttpClient
+            {
+                BaseAddress = new Uri(Environment.GetEnvironmentVariable("MP_OAUTH_BASE_URL").AppendPathSegment("/"))
+            };
+
+            var mpRestClient = new HttpClient
+            {
+                BaseAddress = new Uri(Environment.GetEnvironmentVariable("MP_REST_API_ENDPOINT").AppendPathSegment("/"))
+            };
+
+            // Register Common dependencies
+            services.AddSingleton<IMinistryPlatformRestRequestBuilderFactory, MinistryPlatformRestRequestBuilderFactory>(factory => new MinistryPlatformRestRequestBuilderFactory(mpRestClient, authRestClient));
+            services.AddSingleton<IConfigurationWrapper, ConfigurationWrapper>();
+            services.AddSingleton<Web.Common.MinistryPlatform.IApiUserRepository, Web.Common.MinistryPlatform.ApiUserRepository>(
+                factory => new Web.Common.MinistryPlatform.ApiUserRepository(factory.GetService<IConfigurationWrapper>(), factory.GetService<Web.Common.Security.IAuthenticationRepository>(), mpRestClient));
+            services.AddSingleton<Web.Common.Security.IAuthenticationRepository, Web.Common.Security.AuthenticationRepository>(factory => new Web.Common.Security.AuthenticationRepository(authRestClient, mpRestClient));
         }
     }
 }

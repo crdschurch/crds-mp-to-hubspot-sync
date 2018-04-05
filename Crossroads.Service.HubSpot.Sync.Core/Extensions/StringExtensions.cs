@@ -25,10 +25,10 @@ namespace System
             if (valueToCapitalize.IsNullOrEmpty())
                 return valueToCapitalize;
 
-            if (valueToCapitalize.ToUpperInvariant().First().Equals(valueToCapitalize[0])) // don't mess with it if the first character is already proper case
+            if (valueToCapitalize.Trim().ToUpperInvariant().First().Equals(valueToCapitalize.Trim()[0])) // don't mess with it if the first character is already proper case
                 return valueToCapitalize;
 
-            return Globalization.CultureInfo.InvariantCulture.TextInfo.ToTitleCase(valueToCapitalize);
+            return Globalization.CultureInfo.InvariantCulture.TextInfo.ToTitleCase(valueToCapitalize.Trim());
         }
     }
 }

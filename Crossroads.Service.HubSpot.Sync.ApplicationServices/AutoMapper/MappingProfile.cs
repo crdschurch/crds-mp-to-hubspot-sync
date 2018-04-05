@@ -1,17 +1,21 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using AutoMapper;
-using Crossroads.Service.HubSpot.Sync.Data.HubSpot.Models;
+using Crossroads.Service.HubSpot.Sync.ApplicationServices.Configuration;
+using Crossroads.Service.HubSpot.Sync.Data.HubSpot.Models.Request;
 using Crossroads.Service.HubSpot.Sync.Data.MP.Dto;
 
 namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.AutoMapper
 {
     public class MappingProfile : Profile
     {
-        public MappingProfile()
+        public MappingProfile(IConfigurationService configurationService)
         {
+            var environmentName = configurationService.GetEnvironmentName();
+
             // MP data to HubSpot mapping definitions
-            CreateMap<NewlyRegisteredContactDto, HubSpotContact>()
+            CreateMap<NewlyRegisteredContactDto, BulkContact>()
                 .ForMember(hubSpotContact => hubSpotContact.Email, memberOptions => memberOptions.MapFrom(dto => dto.Email))
                 .ForMember(hubSpotContact => hubSpotContact.Properties, memberOptions =>
                     memberOptions.MapFrom( dto =>
@@ -34,11 +38,6 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.AutoMapper
                             },
                             new ContactProperty
                             {
-                                Property = nameof(dto.Email).ToLowerInvariant(),
-                                Value = dto.Email
-                            },
-                            new ContactProperty
-                            {
                                 Property = nameof(dto.Community).ToLowerInvariant(),
                                 Value = dto.Community
                             },
@@ -52,7 +51,22 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.AutoMapper
                                 Property = nameof(dto.Source).ToLowerInvariant(),
                                 Value = dto.Source
                             },
+                            new ContactProperty
+                            {
+                                Property = "environment",
+                                Value = environmentName
+                            }
                         }));
+
+            // HubSpot bulk to HubSpot serial
+            CreateMap<BulkContact, SerialContact>()
+                .ForMember(hubSpotContact => hubSpotContact.Properties, memberOptions =>
+                    memberOptions.MapFrom(hubSpotBulkContact =>
+                        hubSpotBulkContact.Properties.Append(new ContactProperty
+                        {
+                            Property = nameof(hubSpotBulkContact.Email).ToLowerInvariant(),
+                            Value = hubSpotBulkContact.Email
+                        })));
         }
     }
 }

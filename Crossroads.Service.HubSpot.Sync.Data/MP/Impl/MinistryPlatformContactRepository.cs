@@ -44,8 +44,12 @@ last successful sync date: {lastSuccessfulSyncDate}");
                 .FirstOrDefault(); // unwraps/accommodates SQL Server's ability return multiple result sets in a single query...
                                    // ...represented as a list of lists
 
-            return data?.Select(jObject => _jsonSerializer.ToObject<NewlyRegisteredContactDto>(jObject)).ToList()
+            var contacts = data?.Select(jObject => _jsonSerializer.ToObject<NewlyRegisteredContactDto>(jObject)).ToList()
                 ?? Enumerable.Empty<NewlyRegisteredContactDto>().ToList();
+
+            _logger.LogInformation($"Number of contacts fetched: {contacts.Count}");
+
+            return contacts;
         }
     }
 }

@@ -9,8 +9,10 @@ namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing
     {
         bool SetLastSuccessfulSyncDate(DateTime dateTime);
 
-        bool SetJobProcessingState(JobProcessingState jobProcessingState);
+        JobProcessingState SetJobProcessingState(JobProcessingState jobProcessingState);
 
-        bool StoreJobActivity(IActivity activity);
+        bool SaveActivityResult(IActivityResult activityResult);
+
+        bool SaveHubSpotDailyRequestCount(int mostRecentRequestCount, DateTime activityDateTime);
     }
 }

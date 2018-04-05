@@ -8,5 +8,7 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Configuration
         DateTime GetLastSuccessfulSyncDate();
 
         JobProcessingState GetCurrentJobProcessingState();
+
+        string GetEnvironmentName();
     }
 }

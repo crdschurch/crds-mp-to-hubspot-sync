@@ -12,7 +12,7 @@ namespace Crossroads.Service.HubSpot.Sync.LiteDb.Configuration.Impl
             _liteDbRepository = liteDbRepository ?? throw new ArgumentNullException(nameof(liteDbRepository));
         }
 
-        public TU GetConfiguration<T, TU>() where T : struct, IKeyValuePair<string, TU>
+        public TU Get<T, TU>() where T : struct, IKeyValuePair<string, TU>
         {
             return _liteDbRepository.SingleOrDefault<T>().Value;
         }

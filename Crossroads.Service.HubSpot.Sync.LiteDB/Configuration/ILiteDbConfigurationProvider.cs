@@ -2,6 +2,6 @@
 {
     public interface ILiteDbConfigurationProvider
     {
-        TU GetConfiguration<T, TU>() where T: struct, IKeyValuePair<string, TU>;
+        TU Get<T, TU>() where T: struct, IKeyValuePair<string, TU>;
     }
 }

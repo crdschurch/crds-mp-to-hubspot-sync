@@ -11,7 +11,7 @@ namespace Crossroads.Service.HubSpot.Sync.Core.Time
         /// Returns a DateTime instance representing the current date and time, according to the executing server,
         /// in local format.
         /// </summary>
-        DateTime Now { get; }
+        DateTime UtcNow { get; }
 
         /// <summary>
         /// Converts a long value self-described as milliseconds since the Unix epoch to a DateTimeOffset instance.

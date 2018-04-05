@@ -1,152 +1,219 @@
 ﻿using System;
 using System.Linq;
 using System.Net;
+using System.Net.Http;
 using System.Threading;
+using Crossroads.Service.HubSpot.Sync.Core.Serialization;
+using Crossroads.Service.HubSpot.Sync.Core.Time;
 using Crossroads.Service.HubSpot.Sync.Core.Utilities;
-using Crossroads.Service.HubSpot.Sync.Data.HubSpot.Models;
+using Crossroads.Service.HubSpot.Sync.Data.HubSpot.Models.Request;
+using Crossroads.Service.HubSpot.Sync.Data.HubSpot.Models.Response;
 using Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto;
 using Crossroads.Web.Common.Extensions;
 using Microsoft.Extensions.Logging;
 
 namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
 {
-    /// <summary>
-    /// Don't worry Tim, this is going to get refactored, refactored, refactored.
-    /// </summary>
     public class CreateOrUpdateContactsInHubSpot : ICreateOrUpdateContactsInHubSpot
     {
         private const int MaxBatchSize = 100; // per HubSpot documentation: https://developers.hubspot.com/docs/methods/contacts/batch_create_or_update
 
-        private readonly IHttpPost _httpPost;
+        private readonly IHttpPost _http;
+        private readonly IClock _clock;
+        private readonly IJsonSerializer _serializer;
         private readonly string _hubSpotApiKey;
         private readonly ILogger<CreateOrUpdateContactsInHubSpot> _logger;
 
-        public CreateOrUpdateContactsInHubSpot (IHttpPost httpPost, string hubSpotApiKey, ILogger<CreateOrUpdateContactsInHubSpot> logger)
+        public CreateOrUpdateContactsInHubSpot(
+            IHttpPost http,
+            IClock clock,
+            IJsonSerializer serializer,
+            string hubSpotApiKey, ILogger<CreateOrUpdateContactsInHubSpot> logger)
         {
-            _httpPost = httpPost ?? throw new ArgumentNullException(nameof(httpPost));
+            _http = http ?? throw new ArgumentNullException(nameof(http));
+            _clock = clock ?? throw new ArgumentNullException(nameof(clock));
+            _serializer = serializer ?? throw new ArgumentNullException(nameof(serializer));
             _hubSpotApiKey = hubSpotApiKey ?? throw new ArgumentNullException(nameof(hubSpotApiKey));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public TActivity BulkCreateOrUpdate<TActivity>(HubSpotContact[] contactsToPushUpToHubSpot, TActivity activity) where TActivity : IActivity
+        public BulkActivityResult BulkCreateOrUpdate(BulkContact[] contacts)
         {
-            activity.TotalContacts = contactsToPushUpToHubSpot.Length;
-            var contactCount = activity.TotalContacts;
-            var numberOfBatches = (contactCount / MaxBatchSize) + (contactCount % MaxBatchSize > 0 ? 1 : 0);
-
-            for (int currentBatchNumber = 0; currentBatchNumber < numberOfBatches; currentBatchNumber++)
+            var run = new BulkActivityResult (_clock.UtcNow)
             {
-                var contactBatch = contactsToPushUpToHubSpot.Skip(currentBatchNumber * MaxBatchSize).Take(MaxBatchSize).ToArray();
-                var response = _httpPost.Post($"contacts/v1/contact/batch?hapikey={_hubSpotApiKey}", new HubSpotContactRoot { Contacts = contactBatch.ToArray() });
+                TotalContacts = contacts.Length,
+                BatchCount = (contacts.Length / MaxBatchSize) + (contacts.Length % MaxBatchSize > 0 ? 1 : 0)
+            };
 
-                switch (response.StatusCode)
+            try
+            {
+
+                for (int currentBatchNumber = 0; currentBatchNumber < run.BatchCount; currentBatchNumber++)
                 {
-                    case HttpStatusCode.Accepted: // deemed successful by HubSpot -- all in the batch were accepted
-                        activity.SuccessCount += contactBatch.Length;
-                        _logger.LogInformation($"ACCEPTED: contact batch {currentBatchNumber} of {numberOfBatches}");
-                        break;
-                    default: // HttpStatusCode.BadRequest: 400 or a 429 too many requests
-                             // whatever the code, something went awry and NONE of the contacts were accpeted
-                        activity.FailureCount += contactBatch.Length;
-                        var responseString = response.GetContent();
+                    var contactBatch = contacts.Skip(currentBatchNumber * MaxBatchSize).Take(MaxBatchSize).ToArray();
+                    var response = _http.Post($"contacts/v1/contact/batch?hapikey={_hubSpotApiKey}", contactBatch);
+                    if (response == null)
+                    {
+                        run.FailureCount += contactBatch.Length;
+                        continue;
+                    }
 
-                        // cast to print out the HTTP status code, just in case what's returned isn't
-                        // defined in the https://stackoverflow.com/a/22645395
-                        _logger.LogWarning($@"REJECTED: contact batch {currentBatchNumber} of {numberOfBatches}
-httpstatuscode: {(int)response.StatusCode}
-reason: {responseString}");
+                    switch (response.StatusCode)
+                    {
+                        case HttpStatusCode.Accepted: // deemed successful by HubSpot -- all in the batch were accepted
+                            run.SuccessCount += contactBatch.Length;
+                            _logger.LogInformation($"ACCEPTED: contact batch {currentBatchNumber + 1} of {run.BatchCount}");
+                            break;
+                        default: // 400, 429, etc; something went awry and NONE of the contacts were accepted
+                            run.FailureCount += contactBatch.Length;
+                            var captureFailure = DoNotCaptureFailureIfContactAlreadyExistsIsTheReason(response);
+                            if (captureFailure == false)
+                                continue;
 
-                        activity.FailedBatches.Add(new FailedBatch
-                        {
-                            Count = contactBatch.Length,
-                            BatchNumber = currentBatchNumber,
-                            HttpStatusCode = response.StatusCode.ToString(),
-                            Reason = responseString,
-                            Contacts = contactBatch
-                        });
-                        break;
+                            run.FailedBatches.Add(new FailedBulkSync
+                            {
+                                Count = contactBatch.Length,
+                                BatchNumber = currentBatchNumber + 1,
+                                HttpStatusCode = response.StatusCode,
+                                Reason = GetContent(response),
+                                Contacts = contactBatch
+                            });
+
+                            // cast to print out the HTTP status code, just in case what's returned isn't
+                            // defined in the https://stackoverflow.com/a/22645395
+                            _logger.LogWarning($@"REJECTED: contact batch {currentBatchNumber} of {run.BatchCount}
+httpstatuscode: {(int) response.StatusCode}
+reason: {run.FailedBatches[run.FailedBatches.Count - 1].Reason}");
+
+                            break;
+                    }
+
+                    PumpTheBreaksEvery7RequestsToAvoid429Exceptions(currentBatchNumber);
                 }
 
-                if (currentBatchNumber % 7 == 0) // spread requests out a bit to 7/s (not critical that this process be lightning fast)
-                {
-                    _logger.LogDebug("Avoiding HTTP 429 start...");
-                    Thread.Sleep(1000);
-                    _logger.LogDebug("Avoiding HTTP 429 end.");
-                }
+                return run;
             }
-
-            return activity;
+            finally
+            {
+                run.Execution.FinishUtc = _clock.UtcNow;
+            }
         }
 
-        public NewContactActivity RetryBulkCreate(NewContactActivity firstPass)
+        public SerialActivityResult SerialCreate(SerialContact[] contacts)
         {
-            _logger.LogInformation($"Retrying failed new MP contact registration sync to HubSpot in bulk. {firstPass.FailureCount} in play.");
-            var secondPass = BulkCreateOrUpdate(firstPass.FailedBatches.SelectMany(batchRoot => batchRoot.Contacts).ToArray(), new NewContactActivity{ActivityDateTime = firstPass.ActivityDateTime});
+            var run = new SerialActivityResult(_clock.UtcNow) { TotalContacts = contacts.Length };
+            try
+            {
+                for (int currentContactIndex = 0; currentContactIndex < contacts.Length; currentContactIndex++)
+                {
+                    var contact = contacts[currentContactIndex];
+                    var response = _http.Post($"contacts/v1/contact?hapikey={_hubSpotApiKey}", contact);
+                    if (response == null)
+                    {
+                        run.FailureCount++;
+                        continue;
+                    }
 
-            if (secondPass.SuccessCount == secondPass.TotalContacts)
-                return secondPass;
+                    switch (response.StatusCode)
+                    {
+                        case HttpStatusCode.OK: // deemed successful by HubSpot
+                            run.SuccessCount++;
+                            _logger.LogDebug($"OK: contact {currentContactIndex + 1} of {contacts.Length}");
+                            break;
+                        default: // contact was rejected for creation
+                            run.FailureCount++;
+                            var captureFailure = DoNotCaptureFailureIfContactAlreadyExistsIsTheReason(response);
+                            if (captureFailure == false)
+                                continue;
 
-            if (firstPass.FailureCount == secondPass.FailureCount) // let's try individual contact creation and then shut it down
-                _logger.LogInformation("2nd pass at syncing new MP contacts to HubSpot failed at the same rate of the first run.");
+                            run.Failures.Add(new FailedSerialSync
+                            {
+                                HttpStatusCode = response.StatusCode,
+                                Reason = GetContent(response),
+                                Contact = contact
+                            });
+                            // cast to print out the HTTP status code, just in case what's returned isn't
+                            // defined in the https://stackoverflow.com/a/22645395
+                            _logger.LogWarning($@"REJECTED: contact {currentContactIndex + 1} of {contacts.Length}
+httpstatuscode: {(int) response.StatusCode}
+reason: {run.Failures[run.Failures.Count - 1].Reason}
+contact: {_serializer.Serialize(contacts)}");
 
-            if(secondPass.FailureCount < firstPass.FailureCount) // still some failure
-                _logger.LogInformation($"More success on the 2nd run. {secondPass.SuccessCount} out of {secondPass.TotalContacts} succeeded.");
+                            break;
+                    }
 
-            _logger.LogInformation("Resorting to serial syncing of new contacts.");
-            return Create(new NewContactActivity {ActivityDateTime = secondPass.ActivityDateTime});
+                    PumpTheBreaksEvery7RequestsToAvoid429Exceptions(currentContactIndex);
+                }
+
+                return run;
+            }
+            finally
+            {
+                run.Execution.FinishUtc = _clock.UtcNow;
+            }
         }
 
-        public NewContactActivity Create(NewContactActivity thirdPass)
+        /// <summary>
+        /// Let's exclude any "Contact already exists" errors b/c this is an acceptable failure when attempting to
+        /// explicitly create a contact.
+        /// </summary>
+        /// <param name="response"></param>
+        /// <returns></returns>
+        private bool DoNotCaptureFailureIfContactAlreadyExistsIsTheReason(HttpResponseMessage response)
         {
-            var contacts = thirdPass.FailedBatches.SelectMany(batchHeader => batchHeader.Contacts) // we'll find a better way to accommodate the finicky API in refactor; another type + AutoMapper?
-                .Select(contact =>
-                {
-                    contact.Properties.Add(new ContactProperty {Property = "email", Value = contact.Email});
-                    return contact;
-                }).ToArray();
+            if (response.StatusCode != HttpStatusCode.Conflict)
+                return true;
 
-            for (int currentContactIndex = 0; currentContactIndex < contacts.Length; currentContactIndex++)
+            var conflict = GetContent<Conflict>(response);
+            if (conflict == null)
+                return true;
+
+            // a bit brittle, but the worst that happens is we capture contact exists errors in our failure collection stored in the activity
+            return conflict.Error.Equals("CONTACT_EXISTS", StringComparison.OrdinalIgnoreCase) == false;
+        }
+
+        private void PumpTheBreaksEvery7RequestsToAvoid429Exceptions(int requestCount)
+        {
+            if (requestCount % 7 == 0) // spread requests out a bit to 7/s (not critical that this process be lightning fast)
             {
-                var contact = contacts[currentContactIndex];
-                var response = _httpPost.Post($"contacts/v1/contact?hapikey={_hubSpotApiKey}", contact);
-
-                switch (response.StatusCode)
-                {
-                    case HttpStatusCode.Accepted: // deemed successful by HubSpot -- all in the batch were accepted
-                        thirdPass.SuccessCount++;
-                        _logger.LogDebug($"ACCEPTED: contact {currentContactIndex+1} of {contacts.Length}");
-                        break;
-                    default: // HttpStatusCode.BadRequest: 400 or a 429 too many requests
-                        // whatever the code, something went awry and NONE of the contacts were accpeted
-                        thirdPass.FailureCount++;
-                        var responseString = response.GetContent();
-
-                        // cast to print out the HTTP status code, just in case what's returned isn't
-                        // defined in the https://stackoverflow.com/a/22645395
-                        _logger.LogWarning($@"REJECTED: contact {currentContactIndex + 1} of {contacts.Length}
-httpstatuscode: {(int)response.StatusCode}
-reason: {responseString}");
-
-                        thirdPass.FailedBatches.Add(new FailedBatch
-                        {
-                            Count = contacts.Length,
-                            BatchNumber = 1,
-                            HttpStatusCode = response.StatusCode.ToString(),
-                            Reason = responseString,
-                            Contacts = new [] {contact}
-                        });
-                        break;
-                }
-
-                if (currentContactIndex % 7 == 0) // spread requests out a bit to 7/s (not critical that this process be lightning fast)
-                {
-                    _logger.LogDebug("Avoiding HTTP 429 start...");
-                    Thread.Sleep(1000);
-                    _logger.LogDebug("Avoiding HTTP 429 end.");
-                }
+                _logger.LogDebug("Avoiding HTTP 429 start...");
+                Thread.Sleep(1000);
+                _logger.LogDebug("Avoiding HTTP 429 end.");
             }
+        }
 
-            return thirdPass;
+        /// <summary>
+        /// Wraps getting content stream in a try catch just in case something goes awry.
+        /// </summary>
+        private string GetContent(HttpResponseMessage response)
+        {
+            try
+            {
+                return response.GetContent();
+            }
+            catch (Exception exc)
+            {
+                string message = "Exception occurred while getting content stream.";
+                _logger.LogError(exc, message);
+                return $@"{message}
+{exc}";
+            }
+        }
+
+        /// <summary>
+        /// Wraps getting content stream in a try catch just in case something goes awry.
+        /// </summary>
+        private T GetContent<T>(HttpResponseMessage response)
+        {
+            try
+            {
+                return response.GetContent<T>();
+            }
+            catch (Exception exc)
+            {
+                _logger.LogError(exc, "Exception occurred while getting content stream.");
+                return default(T);
+            }
         }
     }
 }

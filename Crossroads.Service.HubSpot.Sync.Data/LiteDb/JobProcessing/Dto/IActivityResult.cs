@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Enum;
 using Crossroads.Service.HubSpot.Sync.LiteDb;
 
 namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto
@@ -15,5 +16,7 @@ namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto
         List<BulkActivityResult> BulkRunResults { get; set; }
 
         SerialActivityResult SerialRunResult { get; set; }
+
+        JobProcessingState JobProcessingState { get; set; }
     }
 }

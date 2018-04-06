@@ -11,6 +11,8 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Logging
         public static class Web
         {
             public static EventId HelloWorldEndpoint = 1;
+            public static EventId SyncNewMpToHubSpot = 2;
+            public static EventId ViewActivityResult = 3;
         }
 
         public static class Svc

@@ -41,7 +41,7 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public void Execute()
+        public IActivityResult Execute()
         {
             var activity = new NewContactActivityResult(_clock.UtcNow);
             JobProcessingState jobState = default(JobProcessingState);
@@ -53,7 +53,7 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
                 if (jobState == JobProcessingState.Processing)
                 {
                     _logger.LogWarning("Job is already currently processing. Exiting...");
-                    return;
+                    return activity;
                 }
 
                 jobState = _jobRepository.SetJobProcessingState(JobProcessingState.Processing);
@@ -70,7 +70,7 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
                 if (continueProcessing == false)
                 {
                     jobState = MarkSuccessfulExecutionComplete(activity);
-                    return;
+                    return activity;
                 }
 
                 // mixed bag -- keep going, try to pare it down more
@@ -83,7 +83,7 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
                 if (continueProcessing == false)
                 {
                     jobState = MarkSuccessfulExecutionComplete(activity);
-                    return;
+                    return activity;
                 }
 
                 // we'll find a better way to accommodate the finicky API in refactor; another type + AutoMapper?
@@ -91,11 +91,14 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
 
                 _jobRepository.SetLastSuccessfulSyncDate(activity.Execution.StartUtc);
                 jobState = _jobRepository.SetJobProcessingState(JobProcessingState.Idle);
+
+                return activity;
             }
             catch (Exception exc)
             {
                 _logger.LogError(CoreEvent.Exception, exc, "An exception occurred while syncing newly registered MP contacts to HubSpot.");
                 jobState = _jobRepository.SetJobProcessingState(JobProcessingState.Idle);
+                throw;
             }
             finally // *** ALWAYS *** capture the activity, even if the job is already processing or an exception occurs
             {

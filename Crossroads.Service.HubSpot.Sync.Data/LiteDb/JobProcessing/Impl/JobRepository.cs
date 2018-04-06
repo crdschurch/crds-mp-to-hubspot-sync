@@ -59,5 +59,11 @@ namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Impl
 
             return _liteDbRepository.Upsert(toPersist);
         }
+
+        public IActivityResult GetActivity(string activityId)
+        {
+            var activity = _liteDbRepository.SingleById<IActivityResult>(activityId);
+            return activity;
+        }
     }
 }

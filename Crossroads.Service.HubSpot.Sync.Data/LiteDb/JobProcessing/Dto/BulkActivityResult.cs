@@ -5,6 +5,8 @@ namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto
 {
     public class BulkActivityResult
     {
+        public BulkActivityResult() { }
+
         public BulkActivityResult(DateTime start)
         {
             Execution = new ExecutionTime(start);

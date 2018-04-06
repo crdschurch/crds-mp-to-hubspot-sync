@@ -5,6 +5,8 @@ namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto
 {
     public class SerialActivityResult
     {
+        public SerialActivityResult() { }
+
         public SerialActivityResult(DateTime executionStartTime)
         {
             Execution = new ExecutionTime(executionStartTime);

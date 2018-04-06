@@ -1,4 +1,6 @@
 ﻿
+using Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto;
+
 namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services
 {
     /// <summary>
@@ -9,6 +11,6 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services
         /// <summary>
         /// Fire off!!!!
         /// </summary>
-        void Execute();
+        IActivityResult Execute();
     }
 }

@@ -21,6 +21,7 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
         private readonly IHttpPost _http;
         private readonly IClock _clock;
         private readonly IJsonSerializer _serializer;
+        private readonly ISleep _sleeper;
         private readonly string _hubSpotApiKey;
         private readonly ILogger<CreateOrUpdateContactsInHubSpot> _logger;
 
@@ -28,11 +29,14 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
             IHttpPost http,
             IClock clock,
             IJsonSerializer serializer,
-            string hubSpotApiKey, ILogger<CreateOrUpdateContactsInHubSpot> logger)
+            ISleep sleeper,
+            string hubSpotApiKey,
+            ILogger<CreateOrUpdateContactsInHubSpot> logger)
         {
             _http = http ?? throw new ArgumentNullException(nameof(http));
             _clock = clock ?? throw new ArgumentNullException(nameof(clock));
             _serializer = serializer ?? throw new ArgumentNullException(nameof(serializer));
+            _sleeper = sleeper ?? throw new ArgumentNullException(nameof(sleeper));
             _hubSpotApiKey = hubSpotApiKey ?? throw new ArgumentNullException(nameof(hubSpotApiKey));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
@@ -177,7 +181,7 @@ contact: {_serializer.Serialize(contacts)}");
             if (requestCount % 7 == 0) // spread requests out a bit to 7/s (not critical that this process be lightning fast)
             {
                 _logger.LogDebug("Avoiding HTTP 429 start...");
-                Thread.Sleep(1000);
+                _sleeper.Sleep(1000);
                 _logger.LogDebug("Avoiding HTTP 429 end.");
             }
         }

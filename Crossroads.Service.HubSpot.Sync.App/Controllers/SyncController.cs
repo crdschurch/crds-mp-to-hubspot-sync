@@ -8,7 +8,7 @@ using System;
 
 namespace Crossroads.Service.HubSpot.Sync.App.Controllers
 {
-    [Route("[controller]")]
+    [Route("sync")]
     public class SyncController : Controller
     {
         private readonly ISyncNewMpRegistrationsToHubSpot _syncService;
@@ -64,6 +64,24 @@ namespace Crossroads.Service.HubSpot.Sync.App.Controllers
                 catch (Exception exc)
                 {
                     _logger.LogError(AppEvent.Web.ViewActivityResult, exc, "An exception occurred while fetching a sync activity.", exc);
+                    throw;
+                }
+            }
+        }
+
+        [HttpGet]
+        [Route("reset")]
+        public IActionResult ResetJobProcessingState()
+        {
+            using (_logger.BeginScope(AppEvent.Web.ResetJobProcessingState))
+            {
+                try
+                {
+                    return Json(_jobRepository.SetJobProcessingState(JobProcessingState.Idle).ToString());
+                }
+                catch (Exception exc)
+                {
+                    _logger.LogError(AppEvent.Web.ResetJobProcessingState, exc, "An exception occurred while fetching a sync activity.", exc);
                     throw;
                 }
             }

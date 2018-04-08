@@ -3,12 +3,16 @@ using Crossroads.Service.HubSpot.Sync.Data.HubSpot.Models.Request;
 
 namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto
 {
-    public class FailedSerialSync
+    public class BulkFailure
     {
+        public int Count { get; set; }
+
         public HttpStatusCode HttpStatusCode { get; set; }
 
         public string Reason { get; set; }
 
-        public SerialContact Contact { get; set; }
+        public int BatchNumber { get; set; }
+
+        public BulkContact[] Contacts { get; set; }
     }
 }

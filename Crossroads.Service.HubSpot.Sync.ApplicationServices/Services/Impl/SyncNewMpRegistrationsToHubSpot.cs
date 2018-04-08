@@ -115,7 +115,7 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
             return _jobRepository.SetJobProcessingState(JobProcessingState.Idle);
         }
 
-        private bool DetermineNextStepsAfter1stRun(BulkActivityResult firstRun, NewContactActivityResult activity)
+        private bool DetermineNextStepsAfter1stRun(BulkRunResult firstRun, NewContactActivityResult activity)
         {
             if (firstRun.TotalContacts == 0) // nothing to do on this run
             {
@@ -152,7 +152,7 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
             return true;
         }
 
-        private bool DetermineNextStepsAfter2ndRun(BulkActivityResult secondRun, BulkActivityResult firstRun)
+        private bool DetermineNextStepsAfter2ndRun(BulkRunResult secondRun, BulkRunResult firstRun)
         {
             if (secondRun.SuccessCount == secondRun.TotalContacts)
                 return false;

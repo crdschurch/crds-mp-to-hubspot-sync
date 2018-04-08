@@ -13,7 +13,7 @@ namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto
 
         public NewContactActivityResult(DateTime executionStartTime)
         {
-            BulkRunResults = new List<BulkActivityResult>();
+            BulkRunResults = new List<BulkRunResult>();
             Execution = new ExecutionTime(executionStartTime);
             Id = $"NewContactActivityResult_{Execution.StartUtc:u}"; // ISO8601: universal/sortable
         }
@@ -29,9 +29,9 @@ namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto
 
         public int TotalContacts { get; set; }
 
-        public List<BulkActivityResult> BulkRunResults { get; set; }
+        public List<BulkRunResult> BulkRunResults { get; set; }
 
-        public SerialActivityResult SerialRunResult { get; set; }
+        public SerialRunResult SerialRunResult { get; set; }
 
         public JobProcessingState JobProcessingState { get; set; }
     }

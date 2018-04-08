@@ -59,7 +59,7 @@ namespace Crossroads.Service.HubSpot.Sync.App
             services.AddSingleton<IJsonSerializer, JsonSerializer>();
             services.AddSingleton<IMinistryPlatformContactRepository, MinistryPlatformContactRepository>();
             services.AddSingleton<ISyncNewMpRegistrationsToHubSpot, SyncNewMpRegistrationsToHubSpot>();
-            services.AddSingleton(new LiteDatabase("sync.db"));
+            services.AddSingleton(new LiteDatabase("filename=sync.db;utc=true"));
             services.AddSingleton<ILiteDbRepository, LiteDbRepositoryWrapper>();
             services.AddSingleton<ILiteDbConfigurationProvider, LiteDbConfigurationProvider>();
             services.AddSingleton<IJobRepository, JobRepository>();

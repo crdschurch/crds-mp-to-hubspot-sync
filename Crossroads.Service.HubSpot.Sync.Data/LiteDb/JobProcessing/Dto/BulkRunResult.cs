@@ -3,14 +3,14 @@ using System.Collections.Generic;
 
 namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto
 {
-    public class BulkActivityResult
+    public class BulkRunResult
     {
-        public BulkActivityResult() { }
+        public BulkRunResult() { }
 
-        public BulkActivityResult(DateTime start)
+        public BulkRunResult(DateTime start)
         {
             Execution = new ExecutionTime(start);
-            FailedBatches = new List<FailedBulkSync>();
+            FailedBatches = new List<BulkFailure>();
         }
 
         public ExecutionTime Execution { get; set; }
@@ -23,6 +23,6 @@ namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto
 
         public int FailureCount { get; set; }
 
-        public List<FailedBulkSync> FailedBatches { get; set; }
+        public List<BulkFailure> FailedBatches { get; set; }
     }
 }

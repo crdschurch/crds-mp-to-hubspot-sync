@@ -3,14 +3,14 @@ using System.Collections.Generic;
 
 namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto
 {
-    public class SerialActivityResult
+    public class SerialRunResult
     {
-        public SerialActivityResult() { }
+        public SerialRunResult() { }
 
-        public SerialActivityResult(DateTime executionStartTime)
+        public SerialRunResult(DateTime executionStartTime)
         {
             Execution = new ExecutionTime(executionStartTime);
-            Failures = new List<FailedSerialSync>();
+            Failures = new List<SerialFailure>();
         }
 
         public ExecutionTime Execution { get; }
@@ -19,8 +19,10 @@ namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto
 
         public int SuccessCount { get; set; }
 
+        public int ContactAlreadyExistsCount { get; set; }
+
         public int FailureCount { get; set; }
 
-        public List<FailedSerialSync> Failures { get; set; }
+        public List<SerialFailure> Failures { get; set; }
     }
 }

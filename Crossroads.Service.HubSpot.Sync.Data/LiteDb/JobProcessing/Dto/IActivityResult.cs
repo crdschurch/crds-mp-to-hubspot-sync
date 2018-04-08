@@ -13,9 +13,9 @@ namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto
 
         int TotalContacts { get; set; }
 
-        List<BulkActivityResult> BulkRunResults { get; set; }
+        List<BulkRunResult> BulkRunResults { get; set; }
 
-        SerialActivityResult SerialRunResult { get; set; }
+        SerialRunResult SerialRunResult { get; set; }
 
         JobProcessingState JobProcessingState { get; set; }
     }

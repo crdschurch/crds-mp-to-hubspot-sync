@@ -37,9 +37,9 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public BulkActivityResult BulkCreateOrUpdate(BulkContact[] contacts)
+        public BulkRunResult BulkCreateOrUpdate(BulkContact[] contacts)
         {
-            var run = new BulkActivityResult (_clock.UtcNow)
+            var run = new BulkRunResult (_clock.UtcNow)
             {
                 TotalContacts = contacts.Length,
                 BatchCount = (contacts.Length / MaxBatchSize) + (contacts.Length % MaxBatchSize > 0 ? 1 : 0)
@@ -47,7 +47,6 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
 
             try
             {
-
                 for (int currentBatchNumber = 0; currentBatchNumber < run.BatchCount; currentBatchNumber++)
                 {
                     var contactBatch = contacts.Skip(currentBatchNumber * MaxBatchSize).Take(MaxBatchSize).ToArray();
@@ -66,11 +65,7 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
                             break;
                         default: // 400, 429, etc; something went awry and NONE of the contacts were accepted
                             run.FailureCount += contactBatch.Length;
-                            var captureFailure = DoNotCaptureFailureIfContactAlreadyExistsIsTheReason(response);
-                            if (captureFailure == false)
-                                continue;
-
-                            run.FailedBatches.Add(new FailedBulkSync
+                            run.FailedBatches.Add(new BulkFailure
                             {
                                 Count = contactBatch.Length,
                                 BatchNumber = currentBatchNumber + 1,
@@ -99,9 +94,9 @@ reason: {run.FailedBatches[run.FailedBatches.Count - 1].Reason}");
             }
         }
 
-        public SerialActivityResult SerialCreate(SerialContact[] contacts)
+        public SerialRunResult SerialCreate(SerialContact[] contacts)
         {
-            var run = new SerialActivityResult(_clock.UtcNow) { TotalContacts = contacts.Length };
+            var run = new SerialRunResult(_clock.UtcNow) { TotalContacts = contacts.Length };
             try
             {
                 for (int currentContactIndex = 0; currentContactIndex < contacts.Length; currentContactIndex++)
@@ -121,12 +116,15 @@ reason: {run.FailedBatches[run.FailedBatches.Count - 1].Reason}");
                             _logger.LogDebug($"OK: contact {currentContactIndex + 1} of {contacts.Length}");
                             break;
                         default: // contact was rejected for creation
-                            run.FailureCount++;
-                            var captureFailure = DoNotCaptureFailureIfContactAlreadyExistsIsTheReason(response);
-                            if (captureFailure == false)
+                            var contactAlreadyExists = ContactAlreadyExists(response);
+                            if (contactAlreadyExists)
+                            {
+                                run.ContactAlreadyExistsCount++;
                                 continue;
+                            }
 
-                            run.Failures.Add(new FailedSerialSync
+                            run.FailureCount++;
+                            run.Failures.Add(new SerialFailure
                             {
                                 HttpStatusCode = response.StatusCode,
                                 Reason = GetContent(response),
@@ -157,19 +155,16 @@ contact: {_serializer.Serialize(contacts)}");
         /// Let's exclude any "Contact already exists" errors b/c this is an acceptable failure when attempting to
         /// explicitly create a contact.
         /// </summary>
-        /// <param name="response"></param>
-        /// <returns></returns>
-        private bool DoNotCaptureFailureIfContactAlreadyExistsIsTheReason(HttpResponseMessage response)
+        private bool ContactAlreadyExists(HttpResponseMessage response)
         {
             if (response.StatusCode != HttpStatusCode.Conflict)
-                return true;
+                return false;
 
             var conflict = GetContent<Conflict>(response);
-            if (conflict == null)
-                return true;
 
-            // a bit brittle, but the worst that happens is we capture contact exists errors in our failure collection stored in the activity
-            return conflict.Error.Equals("CONTACT_EXISTS", StringComparison.OrdinalIgnoreCase) == false;
+            // a bit brittle (should HubSpot change the error), but the worst that happens is we capture contact exists
+            // errors in our failure collection stored in the activity
+            return conflict?.Error.Equals("CONTACT_EXISTS", StringComparison.OrdinalIgnoreCase) ?? false;
         }
 
         private void PumpTheBreaksEvery7RequestsToAvoid429Exceptions(int requestCount)

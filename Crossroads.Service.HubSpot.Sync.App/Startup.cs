@@ -10,6 +10,7 @@ using Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl;
 using Crossroads.Service.HubSpot.Sync.Core.Serialization;
 using Crossroads.Service.HubSpot.Sync.Core.Time;
 using Crossroads.Service.HubSpot.Sync.Core.Time.Impl;
+using Crossroads.Service.HubSpot.Sync.Core.Utilities;
 using Crossroads.Service.HubSpot.Sync.Core.Utilities.Impl;
 using Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing;
 using Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Impl;
@@ -56,6 +57,7 @@ namespace Crossroads.Service.HubSpot.Sync.App
             services.AddSingleton<ILoggerFactory, LoggerFactory>();
             services.AddLogging();
             services.AddSingleton<IClock, Clock>();
+            services.AddSingleton<ISleep, Sleeper>();
             services.AddSingleton<IJsonSerializer, JsonSerializer>();
             services.AddSingleton<IMinistryPlatformContactRepository, MinistryPlatformContactRepository>();
             services.AddSingleton<ISyncNewMpRegistrationsToHubSpot, SyncNewMpRegistrationsToHubSpot>();
@@ -75,6 +77,7 @@ namespace Crossroads.Service.HubSpot.Sync.App
                         context.GetService<ILogger<HttpJsonPost>>()),
                     context.GetService<IClock>(),
                     context.GetService<IJsonSerializer>(),
+                    context.GetService<ISleep>(),
                     Configuration["HUBSPOT_API_KEY"], // env variable
                     context.GetService<ILogger<CreateOrUpdateContactsInHubSpot>>()));
 

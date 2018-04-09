@@ -3,7 +3,7 @@ using Crossroads.Service.HubSpot.Sync.Data.HubSpot.Models.Request;
 
 namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto
 {
-    public class SerialFailure
+    public class SerialSyncFailure
     {
         public HttpStatusCode HttpStatusCode { get; set; }
 

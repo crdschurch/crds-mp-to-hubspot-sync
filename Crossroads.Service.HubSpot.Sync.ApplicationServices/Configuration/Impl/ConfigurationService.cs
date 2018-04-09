@@ -27,24 +27,24 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Configuration.Impl
             _inauguralSync = inauguralSync?.Value ?? throw new ArgumentNullException(nameof(inauguralSync));
         }
 
-        public DateTime GetLastSuccessfulSyncDate()
+        public SyncDates GetLastSuccessfulSyncDates()
         {
             _logger.LogInformation("Fetching last successful sync date...");
 
-            var storedDateTime = _liteDbConfigurationProvider.Get<LastSuccessfulSyncDate, DateTime>();
-            var syncDate = storedDateTime != default(DateTime)
-                ? storedDateTime
-                : _inauguralSync.Date;
+            var syncDates = _liteDbConfigurationProvider.Get<LastSuccessfulSyncDateInfo, SyncDates>();
+            var syncDate = syncDates.CreateSyncDate != default(DateTime)
+                ? syncDates
+                : new SyncDates {CreateSyncDate = _inauguralSync.Date, UpdateSyncDate = _inauguralSync.Date};
 
             _logger.LogInformation($"Last successful sync date: {syncDate}");
 
             return syncDate;
         }
 
-        public JobProcessingState GetCurrentJobProcessingState()
+        public SyncProcessingState GetCurrentJobProcessingState()
         {
             _logger.LogInformation("Checking job processing state...");
-            return _liteDbConfigurationProvider.Get<JobProcessingStatus, JobProcessingState>();
+            return _liteDbConfigurationProvider.Get<SyncProcessingStatus, SyncProcessingState>();
         }
 
         public string GetEnvironmentName()

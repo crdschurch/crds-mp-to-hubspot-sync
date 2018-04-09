@@ -3,17 +3,17 @@ using System.Collections.Generic;
 
 namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto
 {
-    public class SerialRunResult
+    public class SerialSyncResult
     {
-        public SerialRunResult() { }
+        public SerialSyncResult() { }
 
-        public SerialRunResult(DateTime executionStartTime)
+        public SerialSyncResult(DateTime executionStartTime)
         {
             Execution = new ExecutionTime(executionStartTime);
-            Failures = new List<SerialFailure>();
+            Failures = new List<SerialSyncFailure>();
         }
 
-        public ExecutionTime Execution { get; }
+        public IExecutionTime Execution { get; set; }
 
         public int TotalContacts { get; set; }
 
@@ -23,6 +23,6 @@ namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto
 
         public int FailureCount { get; set; }
 
-        public List<SerialFailure> Failures { get; set; }
+        public List<SerialSyncFailure> Failures { get; set; }
     }
 }

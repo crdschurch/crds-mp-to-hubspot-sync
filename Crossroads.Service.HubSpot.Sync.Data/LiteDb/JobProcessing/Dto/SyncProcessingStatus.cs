@@ -5,12 +5,12 @@ using LiteDB;
 
 namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto
 {
-    public struct JobProcessingStatus : IKeyValuePair<string, JobProcessingState>
+    public struct SyncProcessingStatus : IKeyValuePair<string, SyncProcessingState>
     {
         [BsonField("_id")]
-        public string Key => "JobProcessingStatus";
+        public string Key => nameof(SyncProcessingStatus);
 
-        public JobProcessingState Value { get; set; }
+        public SyncProcessingState Value { get; set; }
 
         public DateTime LastUpdated { get; set; }
     }

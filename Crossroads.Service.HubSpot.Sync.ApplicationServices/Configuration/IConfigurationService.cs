@@ -1,13 +1,13 @@
-﻿using System;
+﻿using Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto;
 using Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Enum;
 
 namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Configuration
 {
     public interface IConfigurationService
     {
-        DateTime GetLastSuccessfulSyncDate();
+        SyncDates GetLastSuccessfulSyncDates();
 
-        JobProcessingState GetCurrentJobProcessingState();
+        SyncProcessingState GetCurrentJobProcessingState();
 
         string GetEnvironmentName();
     }

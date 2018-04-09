@@ -41,9 +41,9 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public BulkRunResult BulkCreateOrUpdate(BulkContact[] contacts)
+        public BulkSyncResult BulkCreateOrUpdate(BulkContact[] contacts)
         {
-            var run = new BulkRunResult (_clock.UtcNow)
+            var run = new BulkSyncResult (_clock.UtcNow)
             {
                 TotalContacts = contacts.Length,
                 BatchCount = (contacts.Length / MaxBatchSize) + (contacts.Length % MaxBatchSize > 0 ? 1 : 0)
@@ -69,7 +69,7 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
                             break;
                         default: // 400, 429, etc; something went awry and NONE of the contacts were accepted
                             run.FailureCount += contactBatch.Length;
-                            run.FailedBatches.Add(new BulkFailure
+                            run.FailedBatches.Add(new BulkSyncFailure
                             {
                                 Count = contactBatch.Length,
                                 BatchNumber = currentBatchNumber + 1,
@@ -98,9 +98,9 @@ reason: {run.FailedBatches[run.FailedBatches.Count - 1].Reason}");
             }
         }
 
-        public SerialRunResult SerialCreate(SerialContact[] contacts)
+        public SerialSyncResult SerialCreate(SerialContact[] contacts)
         {
-            var run = new SerialRunResult(_clock.UtcNow) { TotalContacts = contacts.Length };
+            var run = new SerialSyncResult(_clock.UtcNow) { TotalContacts = contacts.Length };
             try
             {
                 for (int currentContactIndex = 0; currentContactIndex < contacts.Length; currentContactIndex++)
@@ -128,7 +128,7 @@ reason: {run.FailedBatches[run.FailedBatches.Count - 1].Reason}");
                             }
 
                             run.FailureCount++;
-                            run.Failures.Add(new SerialFailure
+                            run.Failures.Add(new SerialSyncFailure
                             {
                                 HttpStatusCode = response.StatusCode,
                                 Reason = GetContent(response),

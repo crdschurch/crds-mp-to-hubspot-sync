@@ -11,6 +11,8 @@ using Crossroads.Service.HubSpot.Sync.Core.Serialization;
 using Crossroads.Service.HubSpot.Sync.Core.Time;
 using Crossroads.Service.HubSpot.Sync.Core.Time.Impl;
 using Crossroads.Service.HubSpot.Sync.Core.Utilities;
+using Crossroads.Service.HubSpot.Sync.Core.Utilities.Guid;
+using Crossroads.Service.HubSpot.Sync.Core.Utilities.Guid.Impl;
 using Crossroads.Service.HubSpot.Sync.Core.Utilities.Impl;
 using Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing;
 using Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Impl;
@@ -21,6 +23,7 @@ using Crossroads.Service.HubSpot.Sync.LiteDb.Configuration.Impl;
 using Crossroads.Service.HubSpot.Sync.LiteDB;
 using Crossroads.Service.HubSpot.Sync.LiteDB.Impl;
 using Crossroads.Web.Common.Configuration;
+using DalSoft.Hosting.BackgroundQueue.DependencyInjection;
 using LiteDB;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -57,10 +60,11 @@ namespace Crossroads.Service.HubSpot.Sync.App
             services.AddSingleton<ILoggerFactory, LoggerFactory>();
             services.AddLogging();
             services.AddSingleton<IClock, Clock>();
+            services.AddSingleton<IGenerateCombGuid, GenerateCombGuid>();
             services.AddSingleton<ISleep, Sleeper>();
             services.AddSingleton<IJsonSerializer, JsonSerializer>();
             services.AddSingleton<IMinistryPlatformContactRepository, MinistryPlatformContactRepository>();
-            services.AddSingleton<ISyncNewMpRegistrationsToHubSpot, SyncNewMpRegistrationsToHubSpot>();
+            services.AddSingleton<ISyncMpContactsToHubSpotService, SyncMpContactsToHubSpotService>();
             services.AddSingleton(new LiteDatabase("filename=sync.db;utc=true"));
             services.AddSingleton<ILiteDbRepository, LiteDbRepositoryWrapper>();
             services.AddSingleton<ILiteDbConfigurationProvider, LiteDbConfigurationProvider>();
@@ -86,6 +90,9 @@ namespace Crossroads.Service.HubSpot.Sync.App
                 cfg.AddProfile(new MappingProfile(provider.GetService<IConfigurationService>()));
             }).CreateMapper());
 
+            services.AddBackgroundQueue(maxConcurrentCount: 1, millisecondsToWaitBeforePickingUpTask: 1000,
+                onException: exception =>
+                    throw new Exception("An exception occurred while a background process was executing.", exception));
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

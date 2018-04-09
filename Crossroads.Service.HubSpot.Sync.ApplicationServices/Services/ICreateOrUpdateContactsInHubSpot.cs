@@ -9,12 +9,12 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services
         /// Creates and/or updates HubSpot contacts in bulk.
         /// </summary>
         /// <param name="contacts">List of Ministry Platform contacts to sync to HubSpot.</param>
-        BulkRunResult BulkCreateOrUpdate(BulkContact[] contacts);
+        BulkSyncResult BulkCreateOrUpdate(BulkContact[] contacts);
 
         /// <summary>
         /// After retrying in bulk, if not all contacts have been synced, let's try again one at a time.
         /// </summary>
         /// <param name="contacts">List of contacts to create serially.</param>
-        SerialRunResult SerialCreate(SerialContact[] contacts);
+        SerialSyncResult SerialCreate(SerialContact[] contacts);
     }
 }

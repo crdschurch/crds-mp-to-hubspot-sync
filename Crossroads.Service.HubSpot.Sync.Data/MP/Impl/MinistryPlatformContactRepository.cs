@@ -36,7 +36,7 @@ sproc: {newlyRegisteredContactsStoredProc}
 last successful sync date: {lastSuccessfulSyncDate}");
 
             var token = _apiUserRepository.GetDefaultApiUserToken();
-            var parameters = new Dictionary<string, object> { { "@LastSuccessfulSyncDate", lastSuccessfulSyncDate } };
+            var parameters = new Dictionary<string, object> { { "@LastSuccessfulSyncDate", lastSuccessfulSyncDate.ToLocalTime() } };
             var data = _mpRestBuilder.NewRequestBuilder()
                 .WithAuthenticationToken(token)
                 .Build()

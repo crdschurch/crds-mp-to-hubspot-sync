@@ -47,11 +47,12 @@ dotnet watch test
 
 ## Deployment
 
+For full Crossroads TeamCity build and deployment instructions for a dotnet core microservice, see [here](https://docs.google.com/document/d/1OVWprEJyscCx8dxtyYjNNkBEcwWWiLZOtG8W7f-Bai0)
 
 ## Logging
 
 To use logging, you may inject the ILogger<T> instance into the constructor of your dependent class definition, where T is the type of the subscribing class.
 
-Then, add the actual logging call as such: _logger.LogError("Error in GetEventOpportunity: " + ex.Message, ex);
+Then, add the actual logging call as such: _logger.LogError($"Error in GetEventOpportunity: {ex.Message}", ex);
 
-Other config settings live in appsettings.json.
+Other config settings live in appSettings.json.

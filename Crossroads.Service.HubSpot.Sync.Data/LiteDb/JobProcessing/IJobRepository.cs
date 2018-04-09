@@ -1,5 +1,6 @@
 ﻿
 using System;
+using System.Collections.Generic;
 using Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto;
 using Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Enum;
 
@@ -7,14 +8,18 @@ namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing
 {
     public interface IJobRepository
     {
-        bool SetLastSuccessfulSyncDate(DateTime dateTime);
+        bool SetLastSuccessfulSyncDate(SyncDates syncDates);
 
-        JobProcessingState SetJobProcessingState(JobProcessingState jobProcessingState);
+        SyncProcessingState SetSyncJobProcessingState(SyncProcessingState syncProcessingState);
 
-        bool SaveActivityResult(IActivityResult activityResult);
+        bool SaveSyncActivity(ISyncActivity syncActivity);
 
         bool SaveHubSpotDailyRequestCount(int mostRecentRequestCount, DateTime activityDateTime);
 
-        IActivityResult GetActivity(string activityId);
+        ISyncActivity GetActivity(string syncJobActivityId);
+
+        ISyncActivity GetMostRecentActivity();
+
+        List<string> GetActivityIds(int limit);
     }
 }

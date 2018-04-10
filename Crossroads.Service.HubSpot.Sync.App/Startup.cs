@@ -65,7 +65,7 @@ namespace Crossroads.Service.HubSpot.Sync.App
             services.AddSingleton<IJsonSerializer, JsonSerializer>();
             services.AddSingleton<IMinistryPlatformContactRepository, MinistryPlatformContactRepository>();
             services.AddSingleton<ISyncMpContactsToHubSpotService, SyncMpContactsToHubSpotService>();
-            services.AddSingleton(new LiteDatabase("filename=C:\\crds-app-storage\\hubspotsync.db;utc=true"));
+            services.AddSingleton(new LiteDatabase($"filename={Configuration["LiteDbPath"]};utc=true"));
             services.AddSingleton<ILiteDbRepository, LiteDbRepositoryWrapper>();
             services.AddSingleton<ILiteDbConfigurationProvider, LiteDbConfigurationProvider>();
             services.AddSingleton<IJobRepository, JobRepository>();

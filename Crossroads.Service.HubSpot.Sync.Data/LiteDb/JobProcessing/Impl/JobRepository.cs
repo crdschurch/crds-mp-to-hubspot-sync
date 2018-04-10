@@ -6,7 +6,6 @@ using Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto;
 using Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Enum;
 using Crossroads.Service.HubSpot.Sync.LiteDb.Configuration;
 using Crossroads.Service.HubSpot.Sync.LiteDB;
-using LiteDB;
 using Microsoft.Extensions.Logging;
 
 namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Impl

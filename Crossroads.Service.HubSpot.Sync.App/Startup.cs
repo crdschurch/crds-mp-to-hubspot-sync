@@ -82,7 +82,7 @@ namespace Crossroads.Service.HubSpot.Sync.App
                     context.GetService<IClock>(),
                     context.GetService<IJsonSerializer>(),
                     context.GetService<ISleep>(),
-                    Configuration["HUBSPOT_API_KEY"], // env variable
+                    Configuration["TEST_HUBSPOT_API_KEY"] ?? Configuration["HUBSPOT_API_KEY"], // env variable
                     context.GetService<ILogger<CreateOrUpdateContactsInHubSpot>>()));
 
             services.AddSingleton(provider => new MapperConfiguration(cfg =>

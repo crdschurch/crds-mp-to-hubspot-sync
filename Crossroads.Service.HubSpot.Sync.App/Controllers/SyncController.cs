@@ -11,7 +11,7 @@ using DalSoft.Hosting.BackgroundQueue;
 
 namespace Crossroads.Service.HubSpot.Sync.App.Controllers
 {
-    [Route("sync")]
+    [Route("")]
     public class SyncController : Controller
     {
         private readonly BackgroundQueue _backgroundQueue;
@@ -41,7 +41,7 @@ namespace Crossroads.Service.HubSpot.Sync.App.Controllers
             return Ok("hello world");
         }
 
-        [HttpGet]
+        [HttpPost]
         [Route("execute")]
         public IActionResult SyncMpContactsToHubSpot()
         {
@@ -51,11 +51,31 @@ namespace Crossroads.Service.HubSpot.Sync.App.Controllers
                 {
                     _backgroundQueue.Enqueue(async cancellationToken => await _syncService.Sync());
 
-                    return Content("Processing, please wait...");
+                    return Ok();
                 }
                 catch (Exception exc)
                 {
                     _logger.LogError(AppEvent.Web.SyncMpContactsToHubSpot, exc, "An exception occurred while syncing MP contacts to HubSpot.");
+                    throw;
+                }
+            }
+        }
+
+        [HttpPost]
+        [Route("state/reset")]
+        public IActionResult ResetJobProcessingState()
+        {
+            using (_logger.BeginScope(AppEvent.Web.ResetJobProcessingState))
+            {
+                try
+                {
+                    _jobRepository.SetSyncJobProcessingState(SyncProcessingState.Idle);
+
+                    return Ok();
+                }
+                catch (Exception exc)
+                {
+                    _logger.LogError(AppEvent.Web.ResetJobProcessingState, exc, "An exception occurred resetting the job processing state to Idle.", exc);
                     throw;
                 }
             }
@@ -93,26 +113,6 @@ namespace Crossroads.Service.HubSpot.Sync.App.Controllers
                 catch (Exception exc)
                 {
                     _logger.LogError(AppEvent.Web.ViewJobProcessingState, exc, "An exception occurred viewing the sync processing state.", exc);
-                    throw;
-                }
-            }
-        }
-
-        [HttpGet]
-        [Route("state/reset")]
-        public IActionResult ResetJobProcessingState()
-        {
-            using (_logger.BeginScope(AppEvent.Web.ResetJobProcessingState))
-            {
-                try
-                {
-                    _jobRepository.SetSyncJobProcessingState(SyncProcessingState.Idle);
-
-                    return RedirectToAction("ViewJobProcessingState");
-                }
-                catch (Exception exc)
-                {
-                    _logger.LogError(AppEvent.Web.ResetJobProcessingState, exc, "An exception occurred resetting the job processing state to Idle.", exc);
                     throw;
                 }
             }

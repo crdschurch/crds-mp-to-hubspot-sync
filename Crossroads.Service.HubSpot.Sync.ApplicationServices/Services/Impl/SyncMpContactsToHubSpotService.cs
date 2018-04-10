@@ -99,7 +99,7 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
                 _logger.LogInformation("Creating newly registered MP contacts in HubSpot...");
                 activity.BulkSyncResult = _hubSpotContactCreatorUpdater.BulkCreateOrUpdate(_mapper.Map<BulkContact[]>(newContacts));
                 activity.TotalContacts = activity.BulkSyncResult.TotalContacts;
-                _jobRepository.SaveHubSpotDailyRequestCount(activity.BulkSyncResult.BatchCount, activity.Execution.StartUtc);
+                _jobRepository.SaveHubSpotApiDailyRequestCount(activity.BulkSyncResult.BatchCount, activity.Execution.StartUtc);
 
                 if (activity.BulkSyncResult.TotalContacts == 0 || // either nothing to do *OR* all contacts were synced to HubSpot successfully
                     activity.BulkSyncResult.SuccessCount == activity.BulkSyncResult.TotalContacts)
@@ -109,7 +109,7 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
 
                 // convert this to be the invocation of a func for serial create or update (passed in as an argument to this method)
                 activity.SerialSyncResult = _hubSpotContactCreatorUpdater.SerialCreate(activity.BulkSyncResult.GetContactsThatFailedToSync(_mapper));
-                _jobRepository.SaveHubSpotDailyRequestCount(activity.SerialSyncResult.TotalContacts, activity.Execution.StartUtc);
+                _jobRepository.SaveHubSpotApiDailyRequestCount(activity.SerialSyncResult.TotalContacts, activity.Execution.StartUtc);
 
                 return activity;
             }

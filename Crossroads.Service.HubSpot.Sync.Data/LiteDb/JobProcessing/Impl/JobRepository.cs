@@ -45,12 +45,12 @@ namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Impl
             return _liteDbRepository.Upsert(syncActivity);
         }
 
-        public bool SaveHubSpotDailyRequestCount(int mostRecentRequestCount, DateTime activityDateTime)
+        public bool SaveHubSpotApiDailyRequestCount(int mostRecentRequestCount, DateTime activityDateTime)
         {
-            var previousRequestStats = _liteDbRepository.SingleOrDefault<HubSpotDailyRequestCount>(rq => rq.Date == activityDateTime.Date);
+            var previousRequestStats = _liteDbRepository.SingleOrDefault<HubSpotApiDailyRequestCount>(rq => rq.Date == activityDateTime.Date);
             _logger.LogInformation($"Previous request count: {previousRequestStats.Value}");
 
-            var toPersist = new HubSpotDailyRequestCount
+            var toPersist = new HubSpotApiDailyRequestCount
             {
                 Value = previousRequestStats.Value + mostRecentRequestCount,
                 Date = activityDateTime.Date,
@@ -63,18 +63,19 @@ namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Impl
             return _liteDbRepository.Upsert(toPersist);
         }
 
+        public List<HubSpotApiDailyRequestCount> GetHubSpotApiDailyRequestCount()
+        {
+            return _liteDbRepository.Fetch<HubSpotApiDailyRequestCount>();
+        }
+
         public ISyncActivity GetActivity(string activityId)
         {
-            var activity = _liteDbRepository.SingleById<ISyncActivity>(activityId);
-            return activity;
+            return _liteDbRepository.SingleById<ISyncActivity>(activityId);
         }
 
         public ISyncActivity GetMostRecentActivity()
         {
             var mostRecentActivityId = _liteDbRepository.Database.GetCollection<ISyncActivity>().Max();
-            if (mostRecentActivityId == null)
-                return default(ISyncActivity);
-
             return GetActivity(mostRecentActivityId.AsString);
         }
 

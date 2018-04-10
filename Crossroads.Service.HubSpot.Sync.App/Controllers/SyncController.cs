@@ -82,6 +82,24 @@ namespace Crossroads.Service.HubSpot.Sync.App.Controllers
         }
 
         [HttpGet]
+        [Route("hubspotapirequestcount")]
+        public IActionResult ViewHubSpotApiRequestCount()
+        {
+            using (_logger.BeginScope(AppEvent.Web.ViewHubSpotApiRequestCount))
+            {
+                try
+                {
+                    return Json(_jobRepository.GetHubSpotApiDailyRequestCount());
+                }
+                catch (Exception exc)
+                {
+                    _logger.LogError(AppEvent.Web.ViewHubSpotApiRequestCount, exc, "An exception occurred viewing the sync processing state.", exc);
+                    throw;
+                }
+            }
+        }
+
+        [HttpGet]
         [Route("dates/view")]
         public IActionResult ViewLastSyncDates()
         {

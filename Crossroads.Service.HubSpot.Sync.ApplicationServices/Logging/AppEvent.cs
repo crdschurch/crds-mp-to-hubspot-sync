@@ -18,6 +18,7 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Logging
             public static EventId ViewAllSyncActivities = 6;
             public static EventId ViewJobProcessingState = 7;
             public static EventId ViewLastSuccessfulSyncDates = 8;
+            public static EventId ViewHubSpotApiRequestCount = 9;
         }
 
         public static class Svc

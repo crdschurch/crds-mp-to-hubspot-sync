@@ -14,7 +14,9 @@ namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing
 
         bool SaveSyncActivity(ISyncActivity syncActivity);
 
-        bool SaveHubSpotDailyRequestCount(int mostRecentRequestCount, DateTime activityDateTime);
+        bool SaveHubSpotApiDailyRequestCount(int mostRecentRequestCount, DateTime activityDateTime);
+
+        List<HubSpotApiDailyRequestCount> GetHubSpotApiDailyRequestCount();
 
         ISyncActivity GetActivity(string syncJobActivityId);
 

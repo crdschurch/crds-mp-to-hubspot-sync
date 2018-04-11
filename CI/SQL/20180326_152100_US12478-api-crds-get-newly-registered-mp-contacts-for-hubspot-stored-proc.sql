@@ -15,6 +15,8 @@ as
     from                dbo.Contacts
     join                dbo.Participants
     on                  Contacts.Contact_ID = Participants.Contact_ID
+    join                dbo.dp_Users
+    on                  dp_Users.Contact_ID = Contacts.Contact_ID
     left join           dbo.Households
     on                  Households.Household_ID = Contacts.Household_ID
     left join           dbo.Congregations

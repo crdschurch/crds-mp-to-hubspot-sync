@@ -155,6 +155,56 @@ contact: {_serializer.Serialize(contacts)}");
             }
         }
 
+        public SerialSyncResult SerialUpdate(SerialContact[] contacts)
+        {
+            var run = new SerialSyncResult(_clock.UtcNow) { TotalContacts = contacts.Length };
+            try
+            {
+                for (int currentContactIndex = 0; currentContactIndex < contacts.Length; currentContactIndex++)
+                {
+                    var contact = contacts[currentContactIndex];
+                    var response = _http.Post($"contacts/v1/contact/createOrUpdate/email/testingapis@hubspot.com/?hapikey={_hubSpotApiKey}", contact);
+                    if (response == null)
+                    {
+                        run.FailureCount++;
+                        continue;
+                    }
+
+                    switch (response.StatusCode)
+                    {
+                        case HttpStatusCode.NoContent: // deemed successful by HubSpot
+                            run.SuccessCount++;
+                            _logger.LogDebug($"No Content: contact {currentContactIndex + 1} of {contacts.Length}");
+                            break;
+                        default: // contact was rejected for creation
+                            run.FailureCount++;
+                            run.Failures.Add(new SerialSyncFailure
+                            {
+                                HttpStatusCode = response.StatusCode,
+                                Reason = GetContent(response),
+                                Contact = contact
+                            });
+                            // cast to print out the HTTP status code, just in case what's returned isn't
+                            // defined in the https://stackoverflow.com/a/22645395
+                            _logger.LogWarning($@"REJECTED: contact {currentContactIndex + 1} of {contacts.Length}
+httpstatuscode: {(int)response.StatusCode}
+reason: {run.Failures[run.Failures.Count - 1].Reason}
+contact: {_serializer.Serialize(contacts)}");
+
+                            break;
+                    }
+
+                    PumpTheBreaksEvery7RequestsToAvoid429Exceptions(currentContactIndex);
+                }
+
+                return run;
+            }
+            finally
+            {
+                run.Execution.FinishUtc = _clock.UtcNow;
+            }
+        }
+
         /// <summary>
         /// Let's exclude any "Contact already exists" errors b/c this is an acceptable failure when attempting to
         /// explicitly create a contact.

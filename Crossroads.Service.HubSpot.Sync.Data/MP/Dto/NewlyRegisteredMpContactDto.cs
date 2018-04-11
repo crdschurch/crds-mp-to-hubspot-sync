@@ -1,7 +1,7 @@
 ﻿
 namespace Crossroads.Service.HubSpot.Sync.Data.MP.Dto
 {
-    public class NewlyRegisteredContactDto
+    public class NewlyRegisteredMpContactDto
     {
         public string MinistryPlatformContactId { get; set; }
 

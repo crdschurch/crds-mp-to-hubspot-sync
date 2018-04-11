@@ -28,7 +28,7 @@ namespace Crossroads.Service.HubSpot.Sync.Data.MP.Impl
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public IList<NewlyRegisteredContactDto> GetNewlyRegisteredContacts(DateTime lastSuccessfulSyncDate)
+        public IList<NewlyRegisteredMpContactDto> GetNewlyRegisteredContacts(DateTime lastSuccessfulSyncDate)
         {
             const string newlyRegisteredContactsStoredProc = "api_crds_get_newly_registered_mp_contacts_for_hubspot";
             _logger.LogInformation($@"Fetching newly registered contacts from MP via stored proc.
@@ -44,8 +44,8 @@ last successful sync date: {lastSuccessfulSyncDate}");
                 .FirstOrDefault(); // unwraps/accommodates SQL Server's ability return multiple result sets in a single query...
                                    // ...represented as a list of lists
 
-            var contacts = data?.Select(jObject => _jsonSerializer.ToObject<NewlyRegisteredContactDto>(jObject)).ToList()
-                ?? Enumerable.Empty<NewlyRegisteredContactDto>().ToList();
+            var contacts = data?.Select(jObject => _jsonSerializer.ToObject<NewlyRegisteredMpContactDto>(jObject)).ToList()
+                ?? Enumerable.Empty<NewlyRegisteredMpContactDto>().ToList();
 
             _logger.LogInformation($"Number of contacts fetched: {contacts.Count}");
 

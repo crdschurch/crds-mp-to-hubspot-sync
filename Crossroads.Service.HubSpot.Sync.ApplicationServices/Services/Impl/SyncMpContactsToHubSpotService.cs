@@ -123,5 +123,43 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
                 activity.Execution.FinishUtc = _clock.UtcNow;
             }
         }
+
+        public ISyncActivityOperation Update(DateTime lastSuccessfulSyncDate)
+        {
+            var activity = new SyncActivityOperation(_clock.UtcNow) { PreviousSyncDate = lastSuccessfulSyncDate };
+
+            try
+            {
+                _logger.LogInformation("Starting MP updates to HubSpot one-way sync operation...");
+                // convert this to be the invocation of a func for requesting MP data (passed in as an argument to this method)
+                var newContacts = _ministryPlatformContactRepository.GetUpdatedContacts(lastSuccessfulSyncDate); // talk to MP
+
+                _logger.LogInformation("Moving MP contact changes to HubSpot...");
+                activity.BulkSyncResult = _hubSpotContactCreatorUpdater.BulkCreateOrUpdate(_mapper.Map<BulkContact[]>(newContacts));
+                activity.TotalContacts = activity.BulkSyncResult.TotalContacts;
+                _jobRepository.SaveHubSpotApiDailyRequestCount(activity.BulkSyncResult.BatchCount, activity.Execution.StartUtc);
+
+                if (activity.BulkSyncResult.TotalContacts == 0 || // either nothing to do *OR* all contacts were synced to HubSpot successfully
+                    activity.BulkSyncResult.SuccessCount == activity.BulkSyncResult.TotalContacts)
+                {
+                    return activity;
+                }
+
+                // convert this to be the invocation of a func for serial create or update (passed in as an argument to this method)
+                activity.SerialSyncResult = _hubSpotContactCreatorUpdater.SerialUpdate(activity.BulkSyncResult.GetContactsThatFailedToSync(_mapper));
+                _jobRepository.SaveHubSpotApiDailyRequestCount(activity.SerialSyncResult.TotalContacts, activity.Execution.StartUtc);
+
+                return activity;
+            }
+            catch (Exception exc)
+            {
+                _logger.LogError(CoreEvent.Exception, exc, "An exception occurred while syncing contacts to HubSpot.");
+                throw;
+            }
+            finally // *** ALWAYS *** capture the activity, even if the job is already processing or an exception occurs
+            {
+                activity.Execution.FinishUtc = _clock.UtcNow;
+            }
+        }
     }
 }

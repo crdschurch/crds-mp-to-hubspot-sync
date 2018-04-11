@@ -15,7 +15,7 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.AutoMapper
             var environmentName = configurationService.GetEnvironmentName();
 
             // MP data to HubSpot mapping definitions
-            CreateMap<NewlyRegisteredContactDto, BulkContact>()
+            CreateMap<NewlyRegisteredMpContactDto, BulkContact>()
                 .ForMember(hubSpotContact => hubSpotContact.Email, memberOptions => memberOptions.MapFrom(dto => dto.Email))
                 .ForMember(hubSpotContact => hubSpotContact.Properties, memberOptions =>
                     memberOptions.MapFrom( dto =>

@@ -16,5 +16,11 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services
         /// </summary>
         /// <param name="contacts">List of contacts to create serially.</param>
         SerialSyncResult SerialCreate(SerialContact[] contacts);
+
+        /// <summary>
+        /// After retrying in bulk, if not all contacts have been synced, let's try again one at a time.
+        /// </summary>
+        /// <param name="contacts">List of contacts to create serially.</param>
+        SerialSyncResult SerialUpdate(SerialContact[] contacts);
     }
 }

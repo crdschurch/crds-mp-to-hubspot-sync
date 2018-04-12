@@ -9,7 +9,7 @@ as
     select              Contacts.Contact_ID as MinistryPlatformContactId,
                         Contacts.Nickname as Firstname,
                         Contacts.Last_Name as Lastname,
-                        Contacts.Email_Address as Email,
+                        dp_Users.User_Email as Email,
                         Congregations.Congregation_Name as Community
 
     from                dbo.Contacts
@@ -21,6 +21,6 @@ as
     on                  Households.Household_ID = Contacts.Household_ID
     left join           dbo.Congregations
     on                  Congregations.Congregation_ID = Households.Congregation_ID
-    where               (Contacts.__Age > 12 OR Contacts.__Age is null)
+    where               (Contacts.__Age > 12 or Contacts.__Age is null)
     and                 Contacts.Email_Address is not null
     and                 Participants.Participant_Start_Date > @LastSuccessfulSyncDate

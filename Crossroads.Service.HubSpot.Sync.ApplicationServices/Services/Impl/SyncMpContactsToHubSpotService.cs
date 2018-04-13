@@ -132,10 +132,11 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
             {
                 _logger.LogInformation("Starting MP updates to HubSpot one-way sync operation...");
                 // convert this to be the invocation of a func for requesting MP data (passed in as an argument to this method)
-                var newContacts = _ministryPlatformContactRepository.GetUpdatedContacts(lastSuccessfulSyncDate); // talk to MP
+                var contactUpdates = _ministryPlatformContactRepository.GetContactUpdates(lastSuccessfulSyncDate); // talk to MP
+
 
                 _logger.LogInformation("Moving MP contact changes to HubSpot...");
-                activity.BulkSyncResult = _hubSpotContactCreatorUpdater.BulkCreateOrUpdate(_mapper.Map<BulkContact[]>(newContacts));
+                // TODO: activity.BulkSyncResult = _hubSpotContactCreatorUpdater.BulkCreateOrUpdate(_mapper.Map<BulkContact[]>(newContacts));
                 activity.TotalContacts = activity.BulkSyncResult.TotalContacts;
                 _jobRepository.SaveHubSpotApiDailyRequestCount(activity.BulkSyncResult.BatchCount, activity.Execution.StartUtc);
 

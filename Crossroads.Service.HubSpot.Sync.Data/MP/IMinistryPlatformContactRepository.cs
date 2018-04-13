@@ -13,15 +13,14 @@ namespace Crossroads.Service.HubSpot.Sync.Data.MP
         /// <param name="lastSuccessfulSyncDateUtc">
         /// The date from which to check for new contacts.
         /// </param>
-        IList<NewlyRegisteredContactDto> GetNewlyRegisteredContacts(DateTime lastSuccessfulSyncDateUtc);
+        IList<NewlyRegisteredMpContactDto> GetNewlyRegisteredContacts(DateTime lastSuccessfulSyncDateUtc);
 
         /// <summary>
-        /// Gets all contacts that were registered since the last time we synced
-        /// MP contacts to HubSpot.
+        /// Gets all contact updates since the last time we synced MP contacts to HubSpot.
         /// </summary>
         /// <param name="lastSuccessfulSyncDateUtc">
-        /// The date from which to check for new contacts.
+        /// The date from which to check for contact updates.
         /// </param>
-        IList<NewlyRegisteredContactDto> GetUpdatedContacts(DateTime lastSuccessfulSyncDateUtc);
+        IDictionary<string, List<MpContactUpdateDto>> GetContactUpdates(DateTime lastSuccessfulSyncDateUtc);
     }
 }

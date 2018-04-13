@@ -67,6 +67,16 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.AutoMapper
                             Property = nameof(hubSpotBulkContact.Email).ToLowerInvariant(),
                             Value = hubSpotBulkContact.Email
                         })));
+
+            // TODO
+            //CreateMap<MpContactUpdateDto, UpdateByEmailContact>()
+            //    .ForMember(hubSpotContact => hubSpotContact.Properties, memberOptions =>
+            //        memberOptions.MapFrom(hubSpotBulkContact =>
+            //            hubSpotBulkContact.Properties.Append(new ContactProperty
+            //            {
+            //                Property = nameof(hubSpotBulkContact.Email).ToLowerInvariant(),
+            //                Value = hubSpotBulkContact.Email
+            //            })));
         }
     }
 }

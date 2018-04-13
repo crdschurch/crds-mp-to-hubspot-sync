@@ -3,7 +3,7 @@ go
 
 -- gets a list of contacts that were created after a given date (presumably, new registrations)
 create or alter procedure dbo.api_crds_get_newly_registered_mp_contacts_for_hubspot
-    @LastSuccessfulSyncDate datetime
+    @LastSuccessfulSyncDateLocal datetime
 as
 
     select              Contacts.Contact_ID as MinistryPlatformContactId,
@@ -23,4 +23,4 @@ as
     on                  Congregations.Congregation_ID = Households.Congregation_ID
     where               (Contacts.__Age > 12 or Contacts.__Age is null)
     and                 Contacts.Email_Address is not null
-    and                 Participants.Participant_Start_Date > @LastSuccessfulSyncDate
+    and                 Participants.Participant_Start_Date > @LastSuccessfulSyncDateLocal

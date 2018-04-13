@@ -28,19 +28,18 @@ namespace Crossroads.Service.HubSpot.Sync.Data.MP.Impl
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public IList<NewlyRegisteredMpContactDto> GetNewlyRegisteredContacts(DateTime lastSuccessfulSyncDate)
+        public IList<NewlyRegisteredMpContactDto> GetNewlyRegisteredContacts(DateTime lastSuccessfulSyncDateUtc)
         {
-            const string newlyRegisteredContactsStoredProc = "api_crds_get_newly_registered_mp_contacts_for_hubspot";
-            _logger.LogInformation($@"Fetching newly registered contacts from MP via stored proc.
-sproc: {newlyRegisteredContactsStoredProc}
-last successful sync date: {lastSuccessfulSyncDate}");
+            const string storedProcName = "api_crds_get_newly_registered_mp_contacts_for_hubspot";
+            var lastSuccessfulSyncDateLocal = lastSuccessfulSyncDateUtc.ToLocalTime();
+            Log(storedProcName, lastSuccessfulSyncDateLocal, "Fetching newly registered contacts from MP via stored proc.");
 
-            var token = _apiUserRepository.GetDefaultApiUserToken();
-            var parameters = new Dictionary<string, object> { { "@LastSuccessfulSyncDate", lastSuccessfulSyncDate.ToLocalTime() } };
+            var token = _apiUserRepository.GetDefaultApiUserToken(); // dbo.Participants.Participant_Start_Date stores "local" datetime
+            var parameters = new Dictionary<string, object> { { "@LastSuccessfulSyncDateLocal", lastSuccessfulSyncDateLocal } };
             var data = _mpRestBuilder.NewRequestBuilder()
                 .WithAuthenticationToken(token)
                 .Build()
-                .ExecuteStoredProc<JObject>(newlyRegisteredContactsStoredProc, parameters)
+                .ExecuteStoredProc<JObject>(storedProcName, parameters)
                 .FirstOrDefault(); // unwraps/accommodates SQL Server's ability return multiple result sets in a single query...
                                    // ...represented as a list of lists
 
@@ -50,6 +49,41 @@ last successful sync date: {lastSuccessfulSyncDate}");
             _logger.LogInformation($"Number of contacts fetched: {contacts.Count}");
 
             return contacts;
+        }
+
+        public IDictionary<string, List<MpContactUpdateDto>> GetContactUpdates(DateTime lastSuccessfulSyncDateUtc)
+        {
+            const string storedProcedureName = "api_crds_get_mp_contact_updates_for_hubspot";
+            Log(storedProcedureName, lastSuccessfulSyncDateUtc, "Fetching MP contacts with recently updated data via stored proc.");
+
+            var token = _apiUserRepository.GetDefaultApiUserToken(); // dp_Audit_Logs.Date_Time stores Utc
+            var parameters = new Dictionary<string, object> { { "@LastSuccessfulSyncDateUtc", lastSuccessfulSyncDateUtc } };
+            var data = _mpRestBuilder.NewRequestBuilder()
+                .WithAuthenticationToken(token)
+                .Build()
+                .ExecuteStoredProc<JObject>(storedProcedureName, parameters)
+                .FirstOrDefault(); // unwraps/accommodates SQL Server's ability return multiple result sets in a single query...
+                                   // ...represented as a list of lists
+
+            var columnUpdates = data?.Select(jObject => _jsonSerializer.ToObject<MpContactUpdateDto>(jObject)).ToList()
+                          ?? Enumerable.Empty<MpContactUpdateDto>().ToList();
+
+            _logger.LogInformation($"Number of column updates fetched: {columnUpdates.Count}");
+
+            var contactColumnUpdates =
+                columnUpdates.GroupBy(key => key.MinistryPlatformContactId, value => value)
+                    .ToDictionary(keySelector => keySelector.Key, values => values.ToList());
+
+            _logger.LogInformation($"Number of contacts updated: {contactColumnUpdates.Count}");
+
+            return contactColumnUpdates;
+        }
+
+        private void Log(string storedProcedureName, DateTime lastSuccessfulSyncDateLocal, string logMessage)
+        {
+            _logger.LogInformation($@"{logMessage}
+sproc: {storedProcedureName}
+last successful sync date: {lastSuccessfulSyncDateLocal}");
         }
     }
 }

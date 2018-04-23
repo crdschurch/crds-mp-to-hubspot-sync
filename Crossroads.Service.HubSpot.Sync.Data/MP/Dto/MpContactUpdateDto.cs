@@ -26,18 +26,17 @@ namespace Crossroads.Service.HubSpot.Sync.Data.MP.Dto
         /// </summary>
         public string Email { get; set; }
 
-        /// <summary>
-        /// 
-        /// </summary>
         public string Firstname { get; set; }
 
         public string Lastname { get; set; }
 
+        public string MaritalStatus { get; set; }
+
         /// <summary>
-        /// The congregation/site of a contact.
+        /// The congregation/site of a contact's household.
         /// </summary>
         public string Community { get; set; }
 
-        public string Source => "MP_Sync_Update";
+        public string Source => "MP_Sync_General_Update";
     }
 }

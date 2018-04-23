@@ -3,9 +3,9 @@ using Newtonsoft.Json;
 
 namespace Crossroads.Service.HubSpot.Sync.Data.HubSpot.Models.Request
 {
-    public class SerialContact : ISerialContact
+    public class SerialCreateContact : IContact
     {
         [JsonProperty(PropertyName = "properties")]
-        public List<ContactProperty> Properties { get; set; }
+        public ISet<ContactProperty> Properties { get; set; }
     }
 }

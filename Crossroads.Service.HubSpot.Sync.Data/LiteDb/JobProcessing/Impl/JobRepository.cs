@@ -25,9 +25,10 @@ namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Impl
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public bool SetLastSuccessfulSyncDate(SyncDates syncDates)
+        public SyncDates SetLastSuccessfulSyncDates(SyncDates syncDates)
         {
-            return _liteDbRepository.Upsert(new LastSuccessfulSyncDateInfo {Value = syncDates, LastUpdated = _clock.UtcNow});
+            _liteDbRepository.Upsert(new LastSuccessfulSyncDateInfo {Value = syncDates, LastUpdated = _clock.UtcNow});
+            return syncDates;
         }
 
         public SyncProcessingState SetSyncJobProcessingState(SyncProcessingState syncProcessingState)

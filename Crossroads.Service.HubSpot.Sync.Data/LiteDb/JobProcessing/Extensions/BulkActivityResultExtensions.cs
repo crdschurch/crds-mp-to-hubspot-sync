@@ -13,10 +13,10 @@ namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Extensions
         /// </summary>
         /// <param name="result">Activity from which to extract the </param>
         /// <param name="mapper"></param>
-        public static SerialContact[] GetContactsThatFailedToSync(this BulkSyncResult result, IMapper mapper)
+        public static SerialCreateContact[] GetContactsThatFailedToSync(this BulkSyncResult result, IMapper mapper)
         {
             var contacts = result?.FailedBatches.SelectMany(batch => batch.Contacts).ToArray();
-            return mapper.Map<SerialContact[]>(contacts);
+            return mapper.Map<SerialCreateContact[]>(contacts);
         }
     }
 }

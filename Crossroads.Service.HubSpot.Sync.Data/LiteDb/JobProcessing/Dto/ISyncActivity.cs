@@ -12,11 +12,11 @@ namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto
 
         SyncDates PreviousSyncDates { get; set; }
 
-        int TotalContacts { get; set; }
+        int TotalContacts { get; }
 
-        ISyncActivityOperation CreateOperation { get; set; }
+        ISyncActivityNewRegistrationOperation NewRegistrationOperation { get; set; }
 
-        ISyncActivityOperation UpdateOperation { get; set; }
+        ISyncActivityCoreUpdateOperation CoreUpdateOperation { get; set; }
 
         SyncProcessingState SyncProcessingState { get; set; }
     }

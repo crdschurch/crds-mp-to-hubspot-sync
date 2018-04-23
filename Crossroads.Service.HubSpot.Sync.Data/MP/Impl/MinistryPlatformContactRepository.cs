@@ -35,7 +35,7 @@ namespace Crossroads.Service.HubSpot.Sync.Data.MP.Impl
             Log(storedProcName, lastSuccessfulSyncDateLocal, "Fetching newly registered contacts from MP via stored proc.");
 
             var token = _apiUserRepository.GetDefaultApiUserToken(); // dbo.Participants.Participant_Start_Date stores "local" datetime
-            var parameters = new Dictionary<string, object> { { "@LastSuccessfulSyncDateLocal", lastSuccessfulSyncDateLocal } };
+            var parameters = new Dictionary<string, object> { { "@LastSuccessfulSyncDate", lastSuccessfulSyncDateLocal } };
             var data = _mpRestBuilder.NewRequestBuilder()
                 .WithAuthenticationToken(token)
                 .Build()
@@ -66,7 +66,7 @@ namespace Crossroads.Service.HubSpot.Sync.Data.MP.Impl
                                    // ...represented as a list of lists
 
             var columnUpdates = data?.Select(jObject => _jsonSerializer.ToObject<MpContactUpdateDto>(jObject)).ToList()
-                          ?? Enumerable.Empty<MpContactUpdateDto>().ToList();
+                                ?? Enumerable.Empty<MpContactUpdateDto>().ToList();
 
             _logger.LogInformation($"Number of column updates fetched: {columnUpdates.Count}");
 
@@ -79,11 +79,11 @@ namespace Crossroads.Service.HubSpot.Sync.Data.MP.Impl
             return contactColumnUpdates;
         }
 
-        private void Log(string storedProcedureName, DateTime lastSuccessfulSyncDateLocal, string logMessage)
+        private void Log(string storedProcedureName, DateTime lastSuccessfulSyncDate, string logMessage)
         {
             _logger.LogInformation($@"{logMessage}
 sproc: {storedProcedureName}
-last successful sync date: {lastSuccessfulSyncDateLocal}");
+last successful sync date: {lastSuccessfulSyncDate}");
         }
     }
 }

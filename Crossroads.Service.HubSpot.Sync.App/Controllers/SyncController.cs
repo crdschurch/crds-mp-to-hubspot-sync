@@ -61,6 +61,24 @@ namespace Crossroads.Service.HubSpot.Sync.App.Controllers
             }
         }
 
+        [HttpGet]
+        [Route("state")]
+        public IActionResult ViewJobProcessingState()
+        {
+            using (_logger.BeginScope(AppEvent.Web.ViewJobProcessingState))
+            {
+                try
+                {
+                    return Content($"Current state: {_configurationService.GetCurrentJobProcessingState()}");
+                }
+                catch (Exception exc)
+                {
+                    _logger.LogError(AppEvent.Web.ViewJobProcessingState, exc, "An exception occurred viewing the sync processing state.", exc);
+                    throw;
+                }
+            }
+        }
+
         [HttpPost]
         [Route("state/reset")]
         public IActionResult ResetJobProcessingState()
@@ -82,25 +100,7 @@ namespace Crossroads.Service.HubSpot.Sync.App.Controllers
         }
 
         [HttpGet]
-        [Route("hubspotapirequestcount")]
-        public IActionResult ViewHubSpotApiRequestCount()
-        {
-            using (_logger.BeginScope(AppEvent.Web.ViewHubSpotApiRequestCount))
-            {
-                try
-                {
-                    return Json(_jobRepository.GetHubSpotApiDailyRequestCount());
-                }
-                catch (Exception exc)
-                {
-                    _logger.LogError(AppEvent.Web.ViewHubSpotApiRequestCount, exc, "An exception occurred viewing the sync processing state.", exc);
-                    throw;
-                }
-            }
-        }
-
-        [HttpGet]
-        [Route("dates/view")]
+        [Route("dates")]
         public IActionResult ViewLastSyncDates()
         {
             using (_logger.BeginScope(AppEvent.Web.ViewLastSuccessfulSyncDates))
@@ -108,7 +108,11 @@ namespace Crossroads.Service.HubSpot.Sync.App.Controllers
                 try
                 {
                     var dates = _configurationService.GetLastSuccessfulSyncDates();
-                    return Content($"Last successful sync dates<br/>Create: {dates.CreateSyncDate.ToLocalTime()}<br/>Update: {dates.UpdateSyncDate.ToLocalTime()}", "text/html");
+                    return Content(
+                        $@"Last successful sync dates<br/>
+                        Registration: {dates.RegistrationSyncDate.ToLocalTime()}<br/>
+                        Core update: {dates.CoreUpdateSyncDate.ToLocalTime()}",
+                        "text/html");
                 }
                 catch (Exception exc)
                 {
@@ -119,25 +123,7 @@ namespace Crossroads.Service.HubSpot.Sync.App.Controllers
         }
 
         [HttpGet]
-        [Route("state/view")]
-        public IActionResult ViewJobProcessingState()
-        {
-            using (_logger.BeginScope(AppEvent.Web.ViewJobProcessingState))
-            {
-                try
-                {
-                    return Content($"Current state: {_configurationService.GetCurrentJobProcessingState()}");
-                }
-                catch (Exception exc)
-                {
-                    _logger.LogError(AppEvent.Web.ViewJobProcessingState, exc, "An exception occurred viewing the sync processing state.", exc);
-                    throw;
-                }
-            }
-        }
-
-        [HttpGet]
-        [Route("activity/view/{activityid}")]
+        [Route("activity/{activityid}")]
         public IActionResult ViewActivity(string activityId)
         {
             using (_logger.BeginScope(AppEvent.Web.ViewSyncActivity))
@@ -155,7 +141,7 @@ namespace Crossroads.Service.HubSpot.Sync.App.Controllers
         }
 
         [HttpGet]
-        [Route("activity/viewall")] // maybe create a view later
+        [Route("activity/all")] // maybe create a view later
         public IActionResult ViewActivities(int limit = 20)
         {
             using (_logger.BeginScope(AppEvent.Web.ViewAllSyncActivities))
@@ -176,7 +162,7 @@ namespace Crossroads.Service.HubSpot.Sync.App.Controllers
         }
 
         [HttpGet]
-        [Route("activity/viewlatest")]
+        [Route("activity/latest")]
         public IActionResult ViewLatestActivity()
         {
             using (_logger.BeginScope(AppEvent.Web.ViewMostRecentSyncActivity))
@@ -191,6 +177,24 @@ namespace Crossroads.Service.HubSpot.Sync.App.Controllers
                 catch (Exception exc)
                 {
                     _logger.LogError(AppEvent.Web.ViewMostRecentSyncActivity, exc, "An exception occurred while fetching most recent sync activity.", exc);
+                    throw;
+                }
+            }
+        }
+
+        [HttpGet]
+        [Route("hubspotapirequestcount")]
+        public IActionResult ViewHubSpotApiRequestCount()
+        {
+            using (_logger.BeginScope(AppEvent.Web.ViewHubSpotApiRequestCount))
+            {
+                try
+                {
+                    return Json(_jobRepository.GetHubSpotApiDailyRequestCount());
+                }
+                catch (Exception exc)
+                {
+                    _logger.LogError(AppEvent.Web.ViewHubSpotApiRequestCount, exc, "An exception occurred viewing the sync processing state.", exc);
                     throw;
                 }
             }

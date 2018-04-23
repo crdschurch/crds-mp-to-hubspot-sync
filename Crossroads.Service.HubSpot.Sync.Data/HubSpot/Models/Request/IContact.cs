@@ -6,6 +6,6 @@ namespace Crossroads.Service.HubSpot.Sync.Data.HubSpot.Models.Request
     public interface IContact
     {
         [JsonProperty(PropertyName = "properties")]
-        List<ContactProperty> Properties { get; set; }
+        ISet<ContactProperty> Properties { get; set; }
     }
 }

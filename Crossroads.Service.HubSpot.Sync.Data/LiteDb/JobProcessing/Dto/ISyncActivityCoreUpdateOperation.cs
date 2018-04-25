@@ -16,6 +16,8 @@ namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto
 
         int TotalContacts { get; }
 
+        int SuccessCount { get; }
+
         int InitialSuccessCount { get; }
 
         int RetrySuccessCount { get; }
@@ -30,16 +32,12 @@ namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto
 
         int HubSpotApiRequestCount { get; }
 
-        SerialCreateSyncResult<EmailAddressCreatedContact> EmailCreatedSyncResult { get; set; }
-
-        CoreUpdateResult<CoreOnlyChangedContact> RetryFailedCreationAsCoreUpdateResult { get; set; }
-
         CoreUpdateResult<EmailAddressChangedContact> EmailChangedSyncResult { get; set; }
 
-        SerialCreateSyncResult<EmailAddressCreatedContact> RetryFailedEmailChangeAsCreateResult { get; set; }
+        SerialCreateSyncResult<EmailAddressCreatedContact> RetryEmailChangeAsCreateSyncResult { get; set; }
 
         CoreUpdateResult<CoreOnlyChangedContact> CoreUpdateSyncResult { get; set; }
 
-        SerialCreateSyncResult<EmailAddressCreatedContact> RetryFailedCoreUpdateAsCreateResult { get; set; }
+        SerialCreateSyncResult<EmailAddressCreatedContact> RetryCoreUpdateAsCreateSyncResult { get; set; }
     }
 }

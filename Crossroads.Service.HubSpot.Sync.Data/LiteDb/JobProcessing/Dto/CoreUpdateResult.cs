@@ -6,7 +6,10 @@ namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto
 {
     public class CoreUpdateResult<TUpdateContact> where TUpdateContact : IUpdateContact
     {
-        public CoreUpdateResult() { }
+        public CoreUpdateResult()
+        {
+            Failures = new List<CoreUpdateFailure<TUpdateContact>>();
+        }
 
         public CoreUpdateResult(DateTime executionStartTime)
         {

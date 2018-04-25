@@ -16,6 +16,12 @@ namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto
 
         int TotalContacts { get; }
 
+        int SuccessCount { get; }
+
+        int ContactAlreadyExistsCount { get; }
+
+        int FailureCount { get; }
+
         int HubSpotApiRequestCount { get; }
 
         BulkSyncResult BulkCreateSyncResult { get; set; }

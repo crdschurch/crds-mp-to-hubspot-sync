@@ -42,10 +42,12 @@ as
                             when 'First_Name' then 'firstname'
                             when 'Last_Name' then 'lastname'
                             when 'Marital_Status_ID' then 'marital_status'
+                            when 'Gender_ID' then 'gender'
                         end as PropertyName, -- the value of the "PropertyName" column corresponds to the "property name" used in HubSpot (passed along in the HS API payload)
                         AuditLog.PreviousValue,
                         case MostRecentFieldChanges.FieldName
                             when 'Martial_Status_ID' then isnull(AuditLog.NewValue, '')
+                            when 'Gender_ID' then isnull(AuditLog.NewValue, '')
                             else AuditLog.NewValue
                         end as NewValue
 
@@ -58,7 +60,7 @@ as
 
                             from            dbo.vw_crds_audit_log
                             where           OperationDateTime > @LastSuccessfulSyncDateUtc
-                            and             FieldName in ('First_Name', 'Last_Name', 'Marital_Status_ID')
+                            and             FieldName in ('First_Name', 'Last_Name', 'Marital_Status_ID', 'Gender_ID')
                             and             TableName = 'Contacts'
                             and             AuditDescription like '%Updated'  --This will capture "Updated" and "Mass Updated"
                             and             PreviousValue <> NewValue
@@ -109,13 +111,15 @@ as
                         Contacts.First_Name as Firstname,
                         Contacts.Last_Name as Lastname,
                         isnull(Congregations.Congregation_Name, '') as Community,
-                        isnull(Marital_Statuses.Marital_Status, '') as MaritalStatus
+                        isnull(Marital_Statuses.Marital_Status, '') as MaritalStatus,
+                        isnull(Genders.Gender, '') as Gender
 
         from            dbo.Contacts
         join            dbo.dp_Users on dp_Users.Contact_ID = Contacts.Contact_ID
         left join       dbo.Households on HouseHolds.Household_ID = Contacts.Household_ID
         left join       dbo.Congregations on Congregations.Congregation_ID = Households.Congregation_ID
         left join       dbo.Marital_Statuses on Marital_Statuses.Marital_Status_ID = Contacts.Marital_Status_ID
+        left join       dbo.Genders on Genders.Gender_ID = Contacts.Gender_ID
         where           (Contacts.__Age > 12 or Contacts.__Age is null)
         and             dp_Users.User_Email is not null
     )
@@ -128,7 +132,8 @@ as
                     RelevantContacts.Lastname,
                     RelevantContacts.Email,
                     RelevantContacts.Community,
-                    RelevantContacts.MaritalStatus
+                    RelevantContacts.MaritalStatus,
+                    RelevantContacts.Gender
 
     from            ContactAuditLog
     join            RelevantContacts
@@ -144,7 +149,8 @@ as
                     RelevantContacts.Lastname,
                     RelevantContacts.Email,
                     RelevantContacts.Community,
-                    RelevantContacts.MaritalStatus
+                    RelevantContacts.MaritalStatus,
+                    RelevantContacts.Gender
 
     from            HouseholdAuditLog
     join            RelevantContacts
@@ -160,7 +166,8 @@ as
                     RelevantContacts.Lastname,
                     RelevantContacts.Email,
                     RelevantContacts.Community,
-                    RelevantContacts.MaritalStatus
+                    RelevantContacts.MaritalStatus,
+                    RelevantContacts.Gender
 
     from            UserAuditLog
     join            RelevantContacts

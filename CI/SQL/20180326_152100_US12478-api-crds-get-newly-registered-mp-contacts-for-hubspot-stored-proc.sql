@@ -11,7 +11,8 @@ as
                         Contacts.Last_Name as Lastname,
                         dp_Users.User_Email as Email,
                         isnull(Congregations.Congregation_Name, '') as Community,
-                        isnull(Marital_Statuses.Marital_Status, '') as MaritalStatus -- passing empty along to translate to 'Unspecified' in HubSpot
+                        isnull(Marital_Statuses.Marital_Status, '') as MaritalStatus,
+                        isnull(Genders.Gender, '') as Gender
 
     from                dbo.Contacts
     join                dbo.Participants on Contacts.Contact_ID = Participants.Contact_ID
@@ -19,6 +20,7 @@ as
     left join           dbo.Households on Households.Household_ID = Contacts.Household_ID
     left join           dbo.Congregations on Congregations.Congregation_ID = Households.Congregation_ID
     left join           dbo.Marital_Statuses on Marital_Statuses.Marital_Status_ID = Contacts.Marital_Status_ID
+    left join           dbo.Genders on Genders.Gender_ID = Contacts.Gender_ID
     where               (Contacts.__Age > 12 or Contacts.__Age is null)
     and                 dp_Users.User_Email is not null
-    and                 Participants.Participant_Start_Date > @LastSuccessfulSyncDate
+    and                 Participants.Participant_Start_Date > @LastSuccessfulSyncDate;

@@ -11,11 +11,6 @@ namespace Crossroads.Service.HubSpot.Sync.Data.HubSpot.Dto
         public List<EmailAddressChangedContact> EmailChangedContacts { get; set; }
 
         /// <summary>
-        /// List of contacts whose email address was previously empty/null and has been replaced with a value.
-        /// </summary>
-        public List<EmailAddressCreatedContact> EmailCreatedContacts { get; set; }
-
-        /// <summary>
         /// List of contacts with non-email changes.
         /// </summary>
         public List<CoreOnlyChangedContact> CoreOnlyChangedContacts { get; set; }

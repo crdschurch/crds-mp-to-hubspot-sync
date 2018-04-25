@@ -32,6 +32,8 @@ namespace Crossroads.Service.HubSpot.Sync.Data.MP.Dto
 
         public string MaritalStatus { get; set; }
 
+        public string Gender { get; set; }
+
         /// <summary>
         /// The congregation/site of a contact's household.
         /// </summary>

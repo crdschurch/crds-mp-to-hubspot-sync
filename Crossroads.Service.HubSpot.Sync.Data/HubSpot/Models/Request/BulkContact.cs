@@ -9,6 +9,6 @@ namespace Crossroads.Service.HubSpot.Sync.Data.HubSpot.Models.Request
         public string Email { get; set; }
 
         [JsonProperty(PropertyName = "properties")]
-        public ISet<ContactProperty> Properties { get; set; }
+        public List<ContactProperty> Properties { get; set; }
     }
 }

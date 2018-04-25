@@ -15,9 +15,7 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services
         /// After retrying in bulk, if not all contacts have been synced, let's try again one at a time.
         /// </summary>
         /// <param name="contacts">List of contacts to create serially.</param>
-        /// <param name="storeAlreadyExistsContacts">Directive as to whether we will take account of contacts found to already exist.</param>
-        SerialCreateSyncResult<TCreateContact> SerialCreate<TCreateContact>(TCreateContact[] contacts, bool storeAlreadyExistsContacts = false)
-            where TCreateContact : IContact;
+        SerialCreateSyncResult<TCreateContact> SerialCreate<TCreateContact>(TCreateContact[] contacts) where TCreateContact : IContact;
 
         /// <summary>
         /// Try updating HubSpot with the latest contact data changes.

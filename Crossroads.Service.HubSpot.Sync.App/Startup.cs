@@ -1,6 +1,4 @@
-﻿using System;
-using System.Net.Http;
-using AutoMapper;
+﻿using AutoMapper;
 using Crossroads.Service.HubSpot.Sync.ApplicationServices.AutoMapper;
 using Crossroads.Service.HubSpot.Sync.ApplicationServices.Configuration;
 using Crossroads.Service.HubSpot.Sync.ApplicationServices.Configuration.Dto;
@@ -30,6 +28,8 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using System;
+using System.Net.Http;
 using JsonSerializer = Crossroads.Service.HubSpot.Sync.Core.Serialization.Impl.JsonSerializer;
 
 namespace Crossroads.Service.HubSpot.Sync.App
@@ -100,7 +100,7 @@ namespace Crossroads.Service.HubSpot.Sync.App
         public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory)
         {
             // Hackery for setting the application's base path for impending log files
-            log4net.GlobalContext.Properties["AppLogRoot"] = Environment.GetEnvironmentVariable("APP_LOG_ROOT");
+            log4net.GlobalContext.Properties["AppLogRoot"] = Configuration["APP_LOG_ROOT"];
             loggerFactory.AddLog4Net("log4net.config"); // defaults to this in root -- being explicit for the sake of explicit transparency/clarity
 
             app.UseCors(builder => builder

@@ -2,6 +2,7 @@
 using Crossroads.Service.HubSpot.Sync.Core.Time;
 using Crossroads.Service.HubSpot.Sync.Core.Utilities;
 using Crossroads.Service.HubSpot.Sync.Data.HubSpot.Models.Request;
+using Crossroads.Service.HubSpot.Sync.Data.HubSpot.Models.Response;
 using Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto;
 using Crossroads.Web.Common.Extensions;
 using Microsoft.Extensions.Logging;
@@ -23,12 +24,7 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
         private readonly string _hubSpotApiKey;
         private readonly ILogger<CreateOrUpdateContactsInHubSpot> _logger;
 
-        public CreateOrUpdateContactsInHubSpot(
-            IHttpPost http,
-            IClock clock,
-            IJsonSerializer serializer,
-            ISleep sleeper,
-            string hubSpotApiKey,
+        public CreateOrUpdateContactsInHubSpot(IHttpPost http, IClock clock, IJsonSerializer serializer, ISleep sleeper, string hubSpotApiKey,
             ILogger<CreateOrUpdateContactsInHubSpot> logger)
         {
             _http = http ?? throw new ArgumentNullException(nameof(http));
@@ -72,7 +68,7 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
                                 Count = contactBatch.Length,
                                 BatchNumber = currentBatchNumber + 1,
                                 HttpStatusCode = response.StatusCode,
-                                Reason = GetContent(response),
+                                Exception = GetContent<HubSpotException>(response),
                                 Contacts = contactBatch
                             });
 
@@ -80,8 +76,7 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
                             // defined in the https://stackoverflow.com/a/22645395
                             _logger.LogWarning($@"REJECTED: contact batch {currentBatchNumber} of {run.BatchCount}
 httpstatuscode: {(int) response.StatusCode}
-reason: {run.FailedBatches[run.FailedBatches.Count - 1].Reason}");
-
+More details will be available in the serial processing logs.");
                             break;
                     }
 
@@ -96,8 +91,7 @@ reason: {run.FailedBatches[run.FailedBatches.Count - 1].Reason}");
             }
         }
 
-        public SerialCreateSyncResult<TCreateContact> SerialCreate<TCreateContact>(TCreateContact[] contacts, bool storeAlreadyExistsContacts = false)
-            where TCreateContact : IContact
+        public SerialCreateSyncResult<TCreateContact> SerialCreate<TCreateContact>(TCreateContact[] contacts) where TCreateContact : IContact
         {
             var run = new SerialCreateSyncResult<TCreateContact>(_clock.UtcNow) { TotalContacts = contacts.Length };
             try
@@ -120,23 +114,17 @@ reason: {run.FailedBatches[run.FailedBatches.Count - 1].Reason}");
                             break;
                         case HttpStatusCode.Conflict: // 409: contact already exists
                             run.ContactAlreadyExistsCount++;
-                            if (storeAlreadyExistsContacts) run.ContactsThatAlreadyExist.Add(contact);
                             break;
                         default: // contact was rejected for creation
                             run.FailureCount++;
-                            run.Failures.Add(new SerialCreateSyncFailure<TCreateContact>
+                            var failure = new SerialCreateSyncFailure<TCreateContact>
                             {
                                 HttpStatusCode = response.StatusCode,
-                                Reason = GetContent(response),
+                                Exception = GetContent<HubSpotException>(response),
                                 Contact = contact
-                            });
-                            // cast to print out the HTTP status code, just in case what's returned isn't
-                            // defined in the https://stackoverflow.com/a/22645395
-                            _logger.LogWarning($@"REJECTED: contact {currentContactIndex + 1} of {contacts.Length}
-httpstatuscode: {(int) response.StatusCode}
-reason: {run.Failures[run.Failures.Count - 1].Reason}
-contact: {_serializer.Serialize(contacts)}");
-
+                            };
+                            run.Failures.Add(failure);
+                            LogContactFailure(failure, contact, currentContactIndex, contacts.Length);
                             break;
                     }
 
@@ -181,19 +169,14 @@ contact: {_serializer.Serialize(contacts)}");
                             break;
                         default: // contact was rejected for creation
                             run.FailureCount++;
-                            run.Failures.Add(new CoreUpdateFailure<TUpdateContact>
+                            var failure = new CoreUpdateFailure<TUpdateContact>
                             {
                                 HttpStatusCode = response.StatusCode,
-                                Reason = GetContent(response),
+                                Exception = GetContent<HubSpotException>(response),
                                 Contact = contact
-                            });
-                            // cast to print out the HTTP status code, just in case what's returned isn't
-                            // defined in the https://stackoverflow.com/a/22645395
-                            _logger.LogWarning($@"REJECTED: contact {currentContactIndex + 1} of {contacts.Length}
-httpstatuscode: {(int)response.StatusCode}
-reason: {run.Failures[run.Failures.Count - 1].Reason}
-contact: {_serializer.Serialize(contacts)}");
-
+                            };
+                            run.Failures.Add(failure);
+                            LogContactFailure(failure, contact, currentContactIndex, contacts.Length);
                             break;
                     }
 
@@ -234,6 +217,35 @@ contact: {_serializer.Serialize(contacts)}");
                 return $@"{message}
 {exc}";
             }
+        }
+
+        /// <summary>
+        /// Wraps getting content stream in a try catch just in case something goes awry.
+        /// </summary>
+        private T GetContent<T>(HttpResponseMessage response)
+        {
+            try
+            {
+                return response.GetContent<T>();
+            }
+            catch (Exception exc)
+            {
+                _logger.LogError(exc, "Exception occurred while getting content stream.");
+                return default(T);
+            }
+        }
+
+        private void LogContactFailure(IFailureDetails failure, IContact contact, int currentContactIndex, int contactCount)
+        {
+            // cast to print out the HTTP status code, just in case what's returned isn't
+            // defined in the enum https://stackoverflow.com/a/22645395
+
+            var hubSpotException = failure.Exception;
+            _logger.LogWarning($@"REJECTED: contact {currentContactIndex + 1} of {contactCount}
+httpstatuscode: {(int)failure.HttpStatusCode}
+issue: {hubSpotException?.Message} for ({hubSpotException?.ValidationResults?.FirstOrDefault()?.Name})
+error: {hubSpotException?.ValidationResults?.FirstOrDefault()?.Error}
+contact: {_serializer.Serialize(contact)}");
         }
     }
 }

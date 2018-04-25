@@ -39,6 +39,8 @@ namespace Crossroads.Service.HubSpot.Sync.Data.MP.Dto
         /// </summary>
         public string MaritalStatus { get; set; }
 
+        public string Gender { get; set; }
+
         /// <summary>
         /// [HubSpot Definition]: How ready a contact might be for a sale. This can be tied to imports, forms, workflows, or manually by contact.
         /// </summary>

@@ -1,15 +1,16 @@
 ﻿using System.Net;
 using Crossroads.Service.HubSpot.Sync.Data.HubSpot.Models.Request;
+using Crossroads.Service.HubSpot.Sync.Data.HubSpot.Models.Response;
 
 namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto
 {
-    public class BulkSyncFailure
+    public class BulkSyncFailure : IFailureDetails
     {
         public int Count { get; set; }
 
         public HttpStatusCode HttpStatusCode { get; set; }
 
-        public string Reason { get; set; }
+        public HubSpotException Exception { get; set; }
 
         public int BatchNumber { get; set; }
 

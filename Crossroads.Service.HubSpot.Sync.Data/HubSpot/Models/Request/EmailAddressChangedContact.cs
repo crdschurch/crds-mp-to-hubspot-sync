@@ -18,16 +18,7 @@ namespace Crossroads.Service.HubSpot.Sync.Data.HubSpot.Models.Request
         [JsonIgnore]
         public string Email { get; set; }
 
-        [JsonIgnore]
-        public string Firstname { get; set; }
-
-        [JsonIgnore]
-        public string Lastname { get; set; }
-
-        [JsonIgnore]
-        public string MaritalStatus { get; set; }
-
-        public ISet<ContactProperty> Properties { get; set; }
+        public List<ContactProperty> Properties { get; set; }
 
         [JsonIgnore]
         public EmailAddressCreatedContact ContactDoesNotExistContingency { get; set; }

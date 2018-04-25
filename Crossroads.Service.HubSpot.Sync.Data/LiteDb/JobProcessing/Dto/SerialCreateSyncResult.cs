@@ -6,13 +6,15 @@ namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto
 {
     public class SerialCreateSyncResult<TContact> where TContact : IContact
     {
-        public SerialCreateSyncResult() { }
+        public SerialCreateSyncResult()
+        {
+            Failures = new List<SerialCreateSyncFailure<TContact>>();
+        }
 
         public SerialCreateSyncResult(DateTime executionStartTime)
         {
             Execution = new ExecutionTime(executionStartTime);
             Failures = new List<SerialCreateSyncFailure<TContact>>();
-            ContactsThatAlreadyExist = new List<TContact>();
         }
 
         public IExecutionTime Execution { get; set; }
@@ -26,7 +28,5 @@ namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto
         public int FailureCount { get; set; }
 
         public List<SerialCreateSyncFailure<TContact>> Failures { get; set; }
-
-        public List<TContact> ContactsThatAlreadyExist { get; set; }
     }
 }

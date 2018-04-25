@@ -11,10 +11,11 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.AutoMapper
     public class MappingProfile : Profile
     {
         private const string EnvironmentPropertyName = "environment";
+        private const string MaritalStatusPropertyName = "marital_status";
 
         public MappingProfile(IConfigurationService configurationService)
         {
-            var environmentName = configurationService.GetEnvironmentName();
+            var environment = configurationService.GetEnvironmentName();
 
             // CREATE SCENARIOS
             // MP data to HubSpot mapping definitions
@@ -40,13 +41,18 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.AutoMapper
                         },
                         new ContactProperty
                         {
-                            Property = nameof(dto.Community).ToLowerInvariant(),
-                            Value = dto.Community
+                            Property = MaritalStatusPropertyName,
+                            Value = dto.MaritalStatus
                         },
                         new ContactProperty
                         {
-                            Property = "marital_status",
-                            Value = dto.MaritalStatus
+                            Property = nameof(dto.Gender).ToLowerInvariant(),
+                            Value = dto.Gender
+                        },
+                        new ContactProperty
+                        {
+                            Property = nameof(dto.Community).ToLowerInvariant(),
+                            Value = dto.Community
                         },
                         new ContactProperty
                         {
@@ -61,57 +67,70 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.AutoMapper
                         new ContactProperty
                         {
                             Property = EnvironmentPropertyName,
-                            Value = environmentName
+                            Value = environment
                         }
                     }));
 
             // HubSpot bulk contact to HubSpot serial contact
             // HubSpot structures contact properties slightly differently for bulk (create or update) and serial create endpoints
             CreateMap<BulkContact, SerialCreateContact>()
-                .ForMember(hubSpotContact => hubSpotContact.Properties, memberOptions =>
-                    memberOptions.MapFrom(hubSpotBulkContact =>
-                        hubSpotBulkContact.Properties.Add(new ContactProperty
+                .ForMember(serialCreateContact => serialCreateContact.Properties, memberOptions =>
+                    memberOptions.MapFrom(bulkCreateContact =>
+                        bulkCreateContact.Properties.Append(new ContactProperty
                         {
-                            Property = nameof(hubSpotBulkContact.Email).ToLowerInvariant(),
-                            Value = hubSpotBulkContact.Email
+                            Property = nameof(bulkCreateContact.Email).ToLowerInvariant(),
+                            Value = bulkCreateContact.Email
                         })));
 
             // UPDATE SCENARIOS
             // when an updated contact who previously had NO email address associated now has one, CREATE contact
             CreateMap<List<MpContactUpdateDto>, EmailAddressCreatedContact>()
-                .ForMember(nowHasEmailContact => nowHasEmailContact.Properties, memberOptions => memberOptions.MapFrom(updates => ToProperties(updates, environmentName)))
-                .AfterMap((updates, contactToBeCreated) =>
-                    contactToBeCreated.Properties.Append(new ContactProperty
+                .ForMember(nowHasEmailContact => nowHasEmailContact.Properties, memberOptions => memberOptions.MapFrom(updates => ToProperties(updates, environment)))
+                .AfterMap((updates, contactToBeCreated) => // *Attempt* to add all the core properties for creation (the HashSet will keep the data clean/unique)
+                    contactToBeCreated.Properties = new HashSet<ContactProperty>(contactToBeCreated.Properties)
                     {
-                        Property = "email",
-                        Value = updates.First().Email
-                    })
-                    .Append(new ContactProperty
-                    {
-                        Property = "firstname",
-                        Value = updates.First().Firstname
-                    })
-                    .Append(new ContactProperty
-                    {
-                        Property = "lastname",
-                        Value = updates.First().Lastname
-                    })
-                    .Append(new ContactProperty
-                    {
-                        Property = "marital_status",
-                        Value = updates.First().MaritalStatus
-                    }));
+                        new ContactProperty
+                        {
+                            Property = "email",
+                            Value = updates.First().Email
+                        },
+                        new ContactProperty
+                        {
+                            Property = "firstname",
+                            Value = updates.First().Firstname
+                        },
+                            new ContactProperty
+                        {
+                            Property = "lastname",
+                            Value = updates.First().Lastname
+                        },
+                        new ContactProperty
+                        {
+                            Property = MaritalStatusPropertyName,
+                            Value = updates.First().MaritalStatus
+                        },
+                        new ContactProperty
+                        {
+                            Property = "gender",
+                            Value = updates.First().Gender
+                        },
+                        new ContactProperty
+                        {
+                            Property = "community",
+                            Value = updates.First().Community
+                        }
+                    }.ToList());
 
             // when an updated contact's email address changed from one value to another
             CreateMap<List<MpContactUpdateDto>, EmailAddressChangedContact>()
                 .ForMember(emailChanged => emailChanged.Email, memberOptions =>
                     memberOptions.MapFrom(updates => updates.First(update => update.PropertyName == "email").PreviousValue))
-                .ForMember(emailChanged => emailChanged.Properties, memberOptions => memberOptions.MapFrom(updates => ToProperties(updates, environmentName)));
+                .ForMember(emailChanged => emailChanged.Properties, memberOptions => memberOptions.MapFrom(updates => ToProperties(updates, environment)));
 
             // when only core, non-email, updates have changed
             CreateMap<List<MpContactUpdateDto>, CoreOnlyChangedContact>()
                 .ForMember(coreOnlyChanged => coreOnlyChanged.Email, memberOptions => memberOptions.MapFrom(updates => updates.First().Email))
-                .ForMember(coreOnlyChanged => coreOnlyChanged.Properties, memberOptions => memberOptions.MapFrom(updates => ToProperties(updates, environmentName)));
+                .ForMember(coreOnlyChanged => coreOnlyChanged.Properties, memberOptions => memberOptions.MapFrom(updates => ToProperties(updates, environment)));
         }
 
         /// <summary>

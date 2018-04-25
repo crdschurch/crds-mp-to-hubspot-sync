@@ -116,7 +116,49 @@ namespace Crossroads.Service.HubSpot.Sync.App.Controllers
                 }
                 catch (Exception exc)
                 {
-                    _logger.LogError(AppEvent.Web.ViewLastSuccessfulSyncDates, exc, "An exception occurred viewing the sync processing state.", exc);
+                    _logger.LogError(AppEvent.Web.ViewLastSuccessfulSyncDates, exc, "An exception occurred viewing the sync processing dates.", exc);
+                    throw;
+                }
+            }
+        }
+
+        [HttpPost]
+        [Route("dates/setreg")]
+        public IActionResult SetRegistrationSyncDate(DateTime registrationSyncDate)
+        {
+            using (_logger.BeginScope(AppEvent.Web.SetRegistrationSyncDate))
+            {
+                try
+                {
+                    var dates = _configurationService.GetLastSuccessfulSyncDates();
+                    dates.RegistrationSyncDate = registrationSyncDate;
+                    _jobRepository.SetLastSuccessfulSyncDates(dates);
+                    return RedirectToAction("ViewLastSyncDates");
+                }
+                catch (Exception exc)
+                {
+                    _logger.LogError(AppEvent.Web.SetRegistrationSyncDate, exc, "An exception occurred setting the new contact registration sync processing date.", exc);
+                    throw;
+                }
+            }
+        }
+
+        [HttpPost]
+        [Route("dates/setcore")]
+        public IActionResult SetCoreUpdateSyncDate(DateTime coreUpdateSyncDate)
+        {
+            using (_logger.BeginScope(AppEvent.Web.SetCoreUpdateSyncDate))
+            {
+                try
+                {
+                    var dates = _configurationService.GetLastSuccessfulSyncDates();
+                    dates.CoreUpdateSyncDate = coreUpdateSyncDate;
+                    _jobRepository.SetLastSuccessfulSyncDates(dates);
+                    return RedirectToAction("ViewLastSyncDates");
+                }
+                catch (Exception exc)
+                {
+                    _logger.LogError(AppEvent.Web.SetCoreUpdateSyncDate, exc, "An exception occurred setting the contact core update sync processing date.", exc);
                     throw;
                 }
             }
@@ -141,7 +183,7 @@ namespace Crossroads.Service.HubSpot.Sync.App.Controllers
         }
 
         [HttpGet]
-        [Route("activity/all")] // maybe create a view later
+        [Route("viewall")] // maybe create a view later
         public IActionResult ViewActivities(int limit = 20)
         {
             using (_logger.BeginScope(AppEvent.Web.ViewAllSyncActivities))
@@ -162,7 +204,7 @@ namespace Crossroads.Service.HubSpot.Sync.App.Controllers
         }
 
         [HttpGet]
-        [Route("activity/latest")]
+        [Route("viewlatest")]
         public IActionResult ViewLatestActivity()
         {
             using (_logger.BeginScope(AppEvent.Web.ViewMostRecentSyncActivity))

@@ -16,6 +16,8 @@ namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto
         public SyncActivityNewRegistrationOperation(DateTime executionStartTime)
         {
             Execution = new ExecutionTime(executionStartTime);
+            BulkCreateSyncResult = new BulkSyncResult();
+            SerialCreateSyncResult = new SerialCreateSyncResult<SerialCreateContact>();
         }
 
         public IExecutionTime Execution { get; set; }
@@ -24,7 +26,16 @@ namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto
 
         public int TotalContacts => BulkCreateSyncResult.TotalContacts;
 
-        public int HubSpotApiRequestCount => BulkCreateSyncResult.TotalContacts + SerialCreateSyncResult?.TotalContacts ?? 0;
+        public int SuccessCount => BulkCreateSyncResult.SuccessCount + SerialCreateSyncResult.SuccessCount;
+
+        public int ContactAlreadyExistsCount => SerialCreateSyncResult.ContactAlreadyExistsCount;
+
+        public int FailureCount => SerialCreateSyncResult.FailureCount;
+
+        public int HubSpotApiRequestCount => BulkCreateSyncResult.BatchCount +
+                                             SerialCreateSyncResult.SuccessCount +
+                                             SerialCreateSyncResult.FailureCount +
+                                             SerialCreateSyncResult.ContactAlreadyExistsCount;
 
         public BulkSyncResult BulkCreateSyncResult { get; set; }
 

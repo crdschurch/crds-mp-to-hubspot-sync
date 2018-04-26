@@ -10,7 +10,7 @@ as
         select          MostRecentFieldChanges.ContactId,
                         case MostRecentFieldChanges.FieldName
                             when 'Email_Address' then 'email'
-                            when 'First_Name' then 'firstname'
+                            when 'Nickname' then 'firstname'
                             when 'Last_Name' then 'lastname'
                             when 'Marital_Status_ID' then 'marital_status'
                             when 'Gender_ID' then 'gender'
@@ -31,7 +31,7 @@ as
 
                             from            dbo.vw_crds_audit_log
                             where           OperationDateTime > @LastSuccessfulSyncDateUtc
-                            and             FieldName in ('Email_Address', 'First_Name', 'Last_Name', 'Marital_Status_ID', 'Gender_ID')
+                            and             FieldName in ('Email_Address', 'Nickname', 'Last_Name', 'Marital_Status_ID', 'Gender_ID')
                             and             TableName = 'Contacts'
                             and             AuditDescription like '%Updated'  --This will capture "Updated" and "Mass Updated"
                             and             NewValue is not null
@@ -81,7 +81,7 @@ as
                         dp_Users.[User_ID] as UserId,
                         Households.Household_ID as HouseholdId,
                         Contacts.Email_Address as Email,
-                        Contacts.First_Name as Firstname,
+                        Contacts.Nickname as Firstname,
                         Contacts.Last_Name as Lastname,
                         isnull(Congregations.Congregation_Name, '') as Community,
                         isnull(Marital_Statuses.Marital_Status, '') as MaritalStatus,

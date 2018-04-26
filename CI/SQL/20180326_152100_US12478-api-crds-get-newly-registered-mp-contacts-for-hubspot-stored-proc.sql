@@ -3,7 +3,7 @@ go
 
 -- gets a list of contacts that were created after a given date (presumably, new registrations)
 create or alter procedure dbo.api_crds_get_newly_registered_mp_contacts_for_hubspot
-    @LastSuccessfulSyncDate datetime
+    @LastSuccessfulSyncDateLocal datetime
 as
 
     select              Contacts.Contact_ID as MinistryPlatformContactId,
@@ -24,7 +24,7 @@ as
     where               (Contacts.__Age > 12 or Contacts.__Age is null)
     and                 Contacts.Email_Address is not null
     and                 Contacts.Email_Address <> ''
-    and                 Participants.Participant_Start_Date > @LastSuccessfulSyncDate;
+    and                 Participants.Participant_Start_Date > @LastSuccessfulSyncDateLocal;
 
     -- significant where clause criteria, b/c a contact with a user record but an empty
     -- Contacts.Email_Address means it has hard bounced and should not be used, meaning

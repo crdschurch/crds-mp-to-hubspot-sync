@@ -6,39 +6,10 @@ create or alter procedure dbo.api_crds_get_mp_contact_updates_for_hubspot
     @LastSuccessfulSyncDateUtc datetime
 as
 
-    with UserAuditLog as (
-        select          MostRecentFieldChanges.UserId,
-                        'email' as PropertyName, -- the value of the "PropertyName" column corresponds to the "property name" used in HubSpot (passed along in the HS API payload)
-                        AuditLog.PreviousValue,
-                        AuditLog.NewValue
-
-        from            dbo.vw_crds_audit_log AuditLog
-        join            (   -- in the event multiple changes were made to a field between updates, we'll be diligent to grab only the last change
-                            select          RecordId as UserId,
-                                            FieldName,
-                                            TableName,
-                                            max(OperationDateTime) as Updated
-
-                            from            dbo.vw_crds_audit_log
-                            where           OperationDateTime > @LastSuccessfulSyncDateUtc
-                            and             FieldName = 'User_Email'
-                            and             TableName = 'dp_Users'
-                            and             AuditDescription like '%Updated'  --This will capture "Updated" and "Mass Updated"
-                            and             NewValue is not null
-                            and             NewValue <> ''
-                            and             PreviousValue <> NewValue
-                            group by        RecordId,
-                                            FieldName,
-                                            TableName
-                        ) MostRecentFieldChanges
-        on              AuditLog.RecordId = MostRecentFieldChanges.UserId
-        and             AuditLog.OperationDateTime = MostRecentFieldChanges.Updated
-        and             AuditLog.FieldName = MostRecentFieldChanges.FieldName
-        and             AuditLog.TableName = AuditLog.TableName
-    ),
-    ContactAuditLog as (
+    with ContactAuditLog as (
         select          MostRecentFieldChanges.ContactId,
                         case MostRecentFieldChanges.FieldName
+                            when 'Email_Address' then 'email'
                             when 'First_Name' then 'firstname'
                             when 'Last_Name' then 'lastname'
                             when 'Marital_Status_ID' then 'marital_status'
@@ -60,9 +31,11 @@ as
 
                             from            dbo.vw_crds_audit_log
                             where           OperationDateTime > @LastSuccessfulSyncDateUtc
-                            and             FieldName in ('First_Name', 'Last_Name', 'Marital_Status_ID', 'Gender_ID')
+                            and             FieldName in ('Email_Address', 'First_Name', 'Last_Name', 'Marital_Status_ID', 'Gender_ID')
                             and             TableName = 'Contacts'
                             and             AuditDescription like '%Updated'  --This will capture "Updated" and "Mass Updated"
+                            and             NewValue is not null
+                            and             NewValue <> ''
                             and             PreviousValue <> NewValue
                             group by        RecordId,
                                             FieldName,
@@ -107,7 +80,7 @@ as
         select          Contacts.Contact_ID as MinistryPlatformContactId,
                         dp_Users.[User_ID] as UserId,
                         Households.Household_ID as HouseholdId,
-                        dp_Users.User_Email as Email,
+                        Contacts.Email_Address as Email,
                         Contacts.First_Name as Firstname,
                         Contacts.Last_Name as Lastname,
                         isnull(Congregations.Congregation_Name, '') as Community,
@@ -121,7 +94,13 @@ as
         left join       dbo.Marital_Statuses on Marital_Statuses.Marital_Status_ID = Contacts.Marital_Status_ID
         left join       dbo.Genders on Genders.Gender_ID = Contacts.Gender_ID
         where           (Contacts.__Age > 12 or Contacts.__Age is null)
-        and             dp_Users.User_Email is not null
+        and             Contacts.Email_Address is not null
+        and             Contacts.Email_Address <> ''
+
+        -- significant where clause criteria, b/c a contact with a user record but an empty
+        -- Contacts.Email_Address indicates it has hard bounced and should not be used, meaning
+        -- they're still allowed to log in, but sending them over to HubSpot for bulk email
+        -- marketing purposes would be a mistake
     )
 
     select          RelevantContacts.MinistryPlatformContactId,
@@ -154,21 +133,4 @@ as
 
     from            HouseholdAuditLog
     join            RelevantContacts
-    on              RelevantContacts.HouseholdId = HouseholdAuditLog.HouseholdId
-
-    union
-
-    select          RelevantContacts.MinistryPlatformContactId,
-                    UserAuditLog.PropertyName,
-                    UserAuditLog.PreviousValue,
-                    UserAuditLog.NewValue,
-                    RelevantContacts.Firstname,
-                    RelevantContacts.Lastname,
-                    RelevantContacts.Email,
-                    RelevantContacts.Community,
-                    RelevantContacts.MaritalStatus,
-                    RelevantContacts.Gender
-
-    from            UserAuditLog
-    join            RelevantContacts
-    on              RelevantContacts.UserId = UserAuditLog.UserId;
+    on              RelevantContacts.HouseholdId = HouseholdAuditLog.HouseholdId;

@@ -11,12 +11,12 @@ namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Extensions
         /// Extracts contacts that failed to sync from the activity object. Also maps
         /// the incoming contact type to a different contact type.
         /// </summary>
-        /// <param name="result">Activity from which to extract the </param>
+        /// <param name="result">Activity from which to extract the contacts that failed to sync.</param>
         /// <param name="mapper"></param>
         public static SerialCreateContact[] GetContactsThatFailedToSync(this BulkSyncResult result, IMapper mapper)
         {
-            var contacts = result?.FailedBatches.SelectMany(batch => batch.Contacts).ToArray();
-            return mapper.Map<SerialCreateContact[]>(contacts);
+            var contacts = result.FailedBatches.SelectMany(batch => batch.Contacts).ToArray();
+            return contacts.Length > 0 ? mapper.Map<SerialCreateContact[]>(contacts) : new SerialCreateContact[0];
         }
     }
 }

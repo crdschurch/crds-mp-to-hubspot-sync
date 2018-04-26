@@ -55,7 +55,7 @@ namespace Crossroads.Service.HubSpot.Sync.App
             services.AddRouting(options => options.LowercaseUrls = false);
             services.AddCors();
 
-            CrossroadsWebCommonConfig.Register(services); // temp solution for debugging
+            CrossroadsWebCommonConfig.Register(services);
 
             services.AddSingleton<ILoggerFactory, LoggerFactory>();
             services.AddLogging();

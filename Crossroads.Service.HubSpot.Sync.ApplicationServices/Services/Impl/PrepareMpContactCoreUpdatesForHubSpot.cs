@@ -45,8 +45,8 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
 
             return new CategorizedContactUpdatesDto
             {
-                EmailChangedContacts = emailAddressChangedContacts,
-                CoreOnlyChangedContacts = coreOnlyChangedContacts
+                EmailChangedContacts = emailAddressChangedContacts.ToArray(),
+                CoreOnlyChangedContacts = coreOnlyChangedContacts.ToArray()
             };
         }
     }

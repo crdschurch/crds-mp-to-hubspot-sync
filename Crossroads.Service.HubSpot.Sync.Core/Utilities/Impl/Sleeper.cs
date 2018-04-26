@@ -17,7 +17,7 @@ namespace Crossroads.Service.HubSpot.Sync.Core.Utilities.Impl
         {
             if (numberOfMillisecondsToSleep <= 0) return;
 
-            _logger.LogInformation($"About to sleep for {numberOfMillisecondsToSleep} ms...");
+            _logger.LogDebug($"About to sleep for {numberOfMillisecondsToSleep} ms...");
             Thread.Sleep(numberOfMillisecondsToSleep);
         }
     }

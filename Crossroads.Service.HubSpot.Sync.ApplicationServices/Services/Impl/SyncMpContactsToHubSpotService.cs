@@ -73,7 +73,7 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
                 if (syncJob.HubSpotIssuesWereEncounteredDuringNewRegistrationOperation() == false)
                 {
                     syncDates.RegistrationSyncDate = syncJob.NewRegistrationOperation.Execution.StartUtc;
-                    syncDates = _jobRepository.SetLastSuccessfulSyncDates(syncDates);
+                    _jobRepository.SetLastSuccessfulSyncDates(syncDates);
                 }
 
                 // update core contact properties
@@ -109,28 +109,17 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
             try
             {
                 _logger.LogInformation("Starting new MP registrations to HubSpot one-way sync operation...");
-                // convert this to be the invocation of a func for requesting MP data (passed in as an argument to this method)
                 var newContacts = _ministryPlatformContactRepository.GetNewlyRegisteredContacts(lastSuccessfulSyncDate); // talk to MP
-
-                _logger.LogInformation("Creating newly registered MP contacts in HubSpot...");
                 activity.BulkCreateSyncResult = _hubSpotContactCreatorUpdater.BulkCreateOrUpdate(_mapper.Map<BulkContact[]>(newContacts));
-
-                if (activity.BulkCreateSyncResult.TotalContacts == 0 || // either nothing to do *OR* all contacts were synced to HubSpot successfully
-                    activity.BulkCreateSyncResult.SuccessCount == activity.BulkCreateSyncResult.TotalContacts)
-                {
-                    return activity;
-                }
-
-                // convert this to be the invocation of a func for serial create or update (passed in as an argument to this method)
                 activity.SerialCreateSyncResult = _hubSpotContactCreatorUpdater.SerialCreate(activity.BulkCreateSyncResult.GetContactsThatFailedToSync(_mapper));
                 return activity;
             }
             catch (Exception exc)
             {
-                _logger.LogError(CoreEvent.Exception, exc, "An exception occurred while syncing contacts to HubSpot.");
+                _logger.LogError(CoreEvent.Exception, exc, "An exception occurred while syncing new MP contacts to HubSpot.");
                 throw;
             }
-            finally
+            finally // *** ALWAYS *** capture the HubSpot API request count, even if an exception occurs
             {
                 activity.Execution.FinishUtc = _clock.UtcNow;
                 _jobRepository.SaveHubSpotApiDailyRequestCount(activity.HubSpotApiRequestCount, activity.Execution.StartUtc);
@@ -145,23 +134,22 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
             {
                 _logger.LogInformation("Starting MP contact core updates to HubSpot one-way sync operation...");
                 var dto = _coreUpdatePreparer.Prepare(_ministryPlatformContactRepository.GetContactUpdates(lastSuccessfulSyncDate));
-                _logger.LogInformation("Moving MP contact changes to HubSpot...");
 
                 // try email changed update operation and retry as create operation for any contacts that do not yet exist in HubSpot
-                activity.EmailChangedSyncResult = _hubSpotContactCreatorUpdater.SerialUpdate(dto.EmailChangedContacts.ToArray());
+                activity.EmailChangedSyncResult = _hubSpotContactCreatorUpdater.SerialUpdate(dto.EmailChangedContacts);
                 activity.RetryEmailChangeAsCreateSyncResult = RetryWhenContactsDoNotYetExistInHubSpot(activity.EmailChangedSyncResult);
 
                 // try core update change operation and retry as create operation for any contacts that do not yet exist in HubSpot
-                activity.CoreUpdateSyncResult = _hubSpotContactCreatorUpdater.SerialUpdate(dto.CoreOnlyChangedContacts.ToArray());
+                activity.CoreUpdateSyncResult = _hubSpotContactCreatorUpdater.SerialUpdate(dto.CoreOnlyChangedContacts);
                 activity.RetryCoreUpdateAsCreateSyncResult = RetryWhenContactsDoNotYetExistInHubSpot(activity.CoreUpdateSyncResult);
                 return activity;
             }
             catch (Exception exc)
             {
-                _logger.LogError(CoreEvent.Exception, exc, "An exception occurred while syncing contacts to HubSpot.");
+                _logger.LogError(CoreEvent.Exception, exc, "An exception occurred while syncing MP contact core updates to HubSpot.");
                 throw;
             }
-            finally // *** ALWAYS *** capture the activity, even if the job is already processing or an exception occurs
+            finally // *** ALWAYS *** capture the HubSpot API request count, even if an exception occurs
             {
                 activity.Execution.FinishUtc = _clock.UtcNow;
                 _jobRepository.SaveHubSpotApiDailyRequestCount(activity.HubSpotApiRequestCount, activity.Execution.StartUtc);

@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using Crossroads.Service.HubSpot.Sync.ApplicationServices.Configuration;
+using Crossroads.Service.HubSpot.Sync.ApplicationServices.Validation;
 using Crossroads.Service.HubSpot.Sync.Core.Logging;
 using Crossroads.Service.HubSpot.Sync.Core.Time;
 using Crossroads.Service.HubSpot.Sync.Core.Utilities.Guid;
@@ -9,6 +10,7 @@ using Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto;
 using Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Enum;
 using Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Extensions;
 using Crossroads.Service.HubSpot.Sync.Data.MP;
+using FluentValidation;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Threading.Tasks;
@@ -24,6 +26,7 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
         private readonly IConfigurationService _configurationService;
         private readonly IJobRepository _jobRepository;
         private readonly IPrepareMpContactCoreUpdatesForHubSpot _coreUpdatePreparer;
+        private readonly IValidator<ISyncActivity> _syncActivityValidator;
         private readonly IGenerateCombGuid _combGuidGenerator;
         private readonly ILogger<SyncMpContactsToHubSpotService> _logger;
 
@@ -35,6 +38,7 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
             IConfigurationService configurationService,
             IJobRepository jobRepository,
             IPrepareMpContactCoreUpdatesForHubSpot coreUpdatePreparer,
+            IValidator<ISyncActivity> syncActivityValidator,
             IGenerateCombGuid combGuidGenerator,
             ILogger<SyncMpContactsToHubSpotService> logger)
         {
@@ -45,6 +49,7 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
             _configurationService = configurationService ?? throw new ArgumentNullException(nameof(configurationService));
             _jobRepository = jobRepository ?? throw new ArgumentNullException(nameof(jobRepository));
             _coreUpdatePreparer = coreUpdatePreparer ?? throw new ArgumentNullException(nameof(coreUpdatePreparer));
+            _syncActivityValidator = syncActivityValidator ?? throw new ArgumentNullException(nameof(syncActivityValidator));
             _combGuidGenerator = combGuidGenerator ?? throw new ArgumentNullException(nameof(combGuidGenerator));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
@@ -70,7 +75,7 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
 
                 // create contacts
                 syncJob.NewRegistrationOperation = Create(syncJob.PreviousSyncDates.RegistrationSyncDate);
-                if (syncJob.HubSpotIssuesWereEncounteredDuringNewRegistrationOperation() == false)
+                if (_syncActivityValidator.Validate(syncJob, ruleSet: RuleSetName.Registration).IsValid)
                 {
                     syncDates.RegistrationSyncDate = syncJob.NewRegistrationOperation.Execution.StartUtc;
                     _jobRepository.SetLastSuccessfulSyncDates(syncDates);
@@ -78,7 +83,7 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
 
                 // update core contact properties
                 syncJob.CoreUpdateOperation = Update(syncJob.PreviousSyncDates.CoreUpdateSyncDate);
-                if (syncJob.HubSpotIssuesWereEncounteredDuringCoreUpdateOperation() == false)
+                if (_syncActivityValidator.Validate(syncJob, ruleSet: RuleSetName.CoreUpdate).IsValid)
                 {
                     syncDates.CoreUpdateSyncDate = syncJob.CoreUpdateOperation.Execution.StartUtc;
                     _jobRepository.SetLastSuccessfulSyncDates(syncDates);

@@ -5,6 +5,7 @@ using Crossroads.Service.HubSpot.Sync.ApplicationServices.Configuration.Dto;
 using Crossroads.Service.HubSpot.Sync.ApplicationServices.Configuration.Impl;
 using Crossroads.Service.HubSpot.Sync.ApplicationServices.Services;
 using Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl;
+using Crossroads.Service.HubSpot.Sync.ApplicationServices.Validation;
 using Crossroads.Service.HubSpot.Sync.Core.Serialization;
 using Crossroads.Service.HubSpot.Sync.Core.Time;
 using Crossroads.Service.HubSpot.Sync.Core.Time.Impl;
@@ -22,6 +23,7 @@ using Crossroads.Service.HubSpot.Sync.LiteDB;
 using Crossroads.Service.HubSpot.Sync.LiteDB.Impl;
 using Crossroads.Web.Common.Configuration;
 using DalSoft.Hosting.BackgroundQueue.DependencyInjection;
+using FluentValidation.AspNetCore;
 using LiteDB;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -51,7 +53,7 @@ namespace Crossroads.Service.HubSpot.Sync.App
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddMvc();
+            services.AddMvc().AddFluentValidation(fv => fv.RegisterValidatorsFromAssemblyContaining<SyncActivityValidator>()); ;
             services.AddRouting(options => options.LowercaseUrls = false);
             services.AddCors();
 

@@ -15,6 +15,12 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services
         /// After retrying in bulk, if not all contacts have been synced, let's try again one at a time.
         /// </summary>
         /// <param name="contacts">List of contacts to create serially.</param>
-        SerialSyncResult SerialCreate(SerialContact[] contacts);
+        SerialCreateSyncResult<TCreateContact> SerialCreate<TCreateContact>(TCreateContact[] contacts) where TCreateContact : IContact;
+
+        /// <summary>
+        /// Try updating HubSpot with the latest contact data changes.
+        /// </summary>
+        /// <param name="contacts">List of contacts to update serially.</param>
+        CoreUpdateResult<TUpdateContact> SerialUpdate<TUpdateContact>(TUpdateContact[] contacts) where TUpdateContact : IUpdateContact;
     }
 }

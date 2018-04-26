@@ -11,6 +11,8 @@ namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto
     {
         public SyncActivityNewRegistrationOperation()
         {
+            BulkCreateSyncResult = new BulkSyncResult();
+            SerialCreateSyncResult = new SerialCreateSyncResult<SerialCreateContact>();
         }
 
         public SyncActivityNewRegistrationOperation(DateTime executionStartTime)

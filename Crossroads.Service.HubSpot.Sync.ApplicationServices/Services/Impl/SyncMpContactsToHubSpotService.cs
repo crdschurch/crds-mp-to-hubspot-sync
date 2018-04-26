@@ -73,13 +73,17 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
                 syncState = _jobRepository.SetSyncJobProcessingState(SyncProcessingState.Processing);
                 var syncDates = syncJob.PreviousSyncDates = _configurationService.GetLastSuccessfulSyncDates();
 
-                // create contacts
-                syncJob.NewRegistrationOperation = Create(syncJob.PreviousSyncDates.RegistrationSyncDate);
-                if (_syncActivityValidator.Validate(syncJob, ruleSet: RuleSetName.Registration).IsValid)
+                try
                 {
-                    syncDates.RegistrationSyncDate = syncJob.NewRegistrationOperation.Execution.StartUtc;
-                    _jobRepository.SetLastSuccessfulSyncDates(syncDates);
+                    // create contacts
+                    syncJob.NewRegistrationOperation = Create(syncJob.PreviousSyncDates.RegistrationSyncDate);
+                    if (_syncActivityValidator.Validate(syncJob, ruleSet: RuleSetName.Registration).IsValid)
+                    {
+                        syncDates.RegistrationSyncDate = syncJob.NewRegistrationOperation.Execution.StartUtc;
+                        _jobRepository.SetLastSuccessfulSyncDates(syncDates);
+                    }
                 }
+                catch { /* logging has already happened; suppressing so core update process can run */ }
 
                 // update core contact properties
                 syncJob.CoreUpdateOperation = Update(syncJob.PreviousSyncDates.CoreUpdateSyncDate);

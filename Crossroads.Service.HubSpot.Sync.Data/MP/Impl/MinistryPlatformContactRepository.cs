@@ -37,7 +37,7 @@ namespace Crossroads.Service.HubSpot.Sync.Data.MP.Impl
             try
             {
                 var token = _apiUserRepository.GetDefaultApiUserToken(); // dbo.Participants.Participant_Start_Date stores "local" datetime
-                var parameters = new Dictionary<string, object> { { "@LastSuccessfulSyncDateLocal", lastSuccessfulSyncDateLocal } };
+                var parameters = new Dictionary<string, object> { { "@LastSuccessfulSyncDate", lastSuccessfulSyncDateLocal } };
                 var data = _mpRestBuilder.NewRequestBuilder()
                     .WithAuthenticationToken(token)
                     .Build()
@@ -48,7 +48,7 @@ namespace Crossroads.Service.HubSpot.Sync.Data.MP.Impl
                 var contacts = data?.Select(jObject => _jsonSerializer.ToObject<NewlyRegisteredMpContactDto>(jObject)).ToList()
                     ?? Enumerable.Empty<NewlyRegisteredMpContactDto>().ToList();
 
-                _logger.LogInformation($"Number of contacts fetched: {contacts.Count}");
+                _logger.LogInformation($"Number of newly registered MP contacts fetched: {contacts.Count}");
 
                 return contacts;
             }
@@ -78,13 +78,13 @@ namespace Crossroads.Service.HubSpot.Sync.Data.MP.Impl
                 var columnUpdates = data?.Select(jObject => _jsonSerializer.ToObject<MpContactUpdateDto>(jObject)).ToList()
                                     ?? Enumerable.Empty<MpContactUpdateDto>().ToList();
 
-                _logger.LogInformation($"Number of column updates fetched: {columnUpdates.Count}");
+                _logger.LogInformation($"Number of column updates fetched from MP: {columnUpdates.Count}");
 
                 var contactColumnUpdates =
                     columnUpdates.GroupBy(key => key.MinistryPlatformContactId, value => value)
                         .ToDictionary(keySelector => keySelector.Key, values => values.ToList());
 
-                _logger.LogInformation($"Number of contacts updated: {contactColumnUpdates.Count}");
+                _logger.LogInformation($"Number of contacts to update in HubSpot: {contactColumnUpdates.Count}");
 
                 return contactColumnUpdates;
             }

@@ -11,6 +11,10 @@ namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto
     {
         public SyncActivityCoreUpdateOperation()
         {
+            EmailChangedSyncResult = new CoreUpdateResult<EmailAddressChangedContact>();
+            RetryEmailChangeAsCreateSyncResult = new SerialCreateSyncResult<EmailAddressCreatedContact>();
+            CoreUpdateSyncResult = new CoreUpdateResult<CoreOnlyChangedContact>();
+            RetryCoreUpdateAsCreateSyncResult = new SerialCreateSyncResult<EmailAddressCreatedContact>();
         }
 
         public SyncActivityCoreUpdateOperation(DateTime executionStartTime)

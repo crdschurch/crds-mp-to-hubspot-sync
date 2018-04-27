@@ -1,3 +1,8 @@
+-- For an understanding of why...
+-- PreviousValue <> NewValue
+-- ... is now ...
+-- isnull(PreviousValue, '') <> NewValue
+-- ...consult the following url: https://docs.microsoft.com/en-us/sql/t-sql/statements/set-ansi-nulls-transact-sql?view=sql-server-2017
 use [MinistryPlatform]
 go
 
@@ -17,7 +22,7 @@ as
                         end as PropertyName, -- the value of the "PropertyName" column corresponds to the "property name" used in HubSpot (passed along in the HS API payload)
                         AuditLog.PreviousValue,
                         case MostRecentFieldChanges.FieldName
-                            when 'Martial_Status_ID' then isnull(AuditLog.NewValue, '')
+                            when 'Marital_Status_ID' then isnull(AuditLog.NewValue, '')
                             when 'Gender_ID' then isnull(AuditLog.NewValue, '')
                             else AuditLog.NewValue
                         end as NewValue
@@ -36,7 +41,7 @@ as
                             and             AuditDescription like '%Updated'  --This will capture "Updated" and "Mass Updated"
                             and             NewValue is not null
                             and             NewValue <> ''
-                            and             PreviousValue <> NewValue
+                            and             isnull(PreviousValue, '') <> NewValue
                             group by        RecordId,
                                             FieldName,
                                             TableName
@@ -66,7 +71,7 @@ as
                             and             AuditDescription like '%Updated'  --This will capture "Updated" and "Mass Updated"
                             and             NewValue is not null
                             and             NewValue <> ''
-                            and             PreviousValue <> NewValue
+                            and             isnull(PreviousValue, '') <> NewValue
                             group by        RecordId,
                                             FieldName,
                                             TableName

@@ -4,7 +4,7 @@ go
 
 begin
 
-    if not exists (select 1 from sys.indexes where name='IDX_dp_Audit_Detail_FieldName_AuditItemId_Previous_Value_New_Value' and object_id = object_id('dbo.dp_Audit_Detail'))
+    if not exists (select 1 from sys.indexes where name='IDX_dp_Audit_Detail_FieldName_AuditItemId_INCLUDE_Previous_Value_New_Value' and object_id = object_id('dbo.dp_Audit_Detail'))
     begin
 
         -- creating this index per the MSSQL Execution Plan suggestion

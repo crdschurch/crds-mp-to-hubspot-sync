@@ -21,11 +21,7 @@ as
                             when 'Gender_ID' then 'gender'
                         end as PropertyName, -- the value of the "PropertyName" column corresponds to the "property name" used in HubSpot (passed along in the HS API payload)
                         AuditLog.PreviousValue,
-                        case MostRecentFieldChanges.FieldName
-                            when 'Marital_Status_ID' then isnull(AuditLog.NewValue, '')
-                            when 'Gender_ID' then isnull(AuditLog.NewValue, '')
-                            else AuditLog.NewValue
-                        end as NewValue
+                        AuditLog.NewValue
 
         from            dbo.vw_crds_audit_log AuditLog
         join            (   -- in the event multiple changes were made to a field between updates, we'll be diligent to grab only the last change
@@ -55,7 +51,7 @@ as
         select          MostRecentFieldChanges.HouseholdId,
                         'community' as PropertyName,
                         AuditLog.PreviousValue,
-                        isnull(AuditLog.NewValue, '') as NewValue
+                        AuditLog.NewValue
 
         from            dbo.vw_crds_audit_log AuditLog
         join            (

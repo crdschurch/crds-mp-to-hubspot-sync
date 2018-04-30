@@ -1,7 +1,6 @@
-﻿using System;
-using System.Threading.Tasks;
-using AutoMapper;
+﻿using AutoMapper;
 using Crossroads.Service.HubSpot.Sync.ApplicationServices.Configuration;
+using Crossroads.Service.HubSpot.Sync.ApplicationServices.Validation;
 using Crossroads.Service.HubSpot.Sync.Core.Logging;
 using Crossroads.Service.HubSpot.Sync.Core.Time;
 using Crossroads.Service.HubSpot.Sync.Core.Utilities.Guid;
@@ -11,7 +10,10 @@ using Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto;
 using Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Enum;
 using Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Extensions;
 using Crossroads.Service.HubSpot.Sync.Data.MP;
+using FluentValidation;
 using Microsoft.Extensions.Logging;
+using System;
+using System.Threading.Tasks;
 
 namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
 {
@@ -23,6 +25,8 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
         private readonly IClock _clock;
         private readonly IConfigurationService _configurationService;
         private readonly IJobRepository _jobRepository;
+        private readonly IPrepareMpContactCoreUpdatesForHubSpot _coreUpdatePreparer;
+        private readonly IValidator<ISyncActivity> _syncActivityValidator;
         private readonly IGenerateCombGuid _combGuidGenerator;
         private readonly ILogger<SyncMpContactsToHubSpotService> _logger;
 
@@ -33,6 +37,8 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
             IClock clock,
             IConfigurationService configurationService,
             IJobRepository jobRepository,
+            IPrepareMpContactCoreUpdatesForHubSpot coreUpdatePreparer,
+            IValidator<ISyncActivity> syncActivityValidator,
             IGenerateCombGuid combGuidGenerator,
             ILogger<SyncMpContactsToHubSpotService> logger)
         {
@@ -42,15 +48,16 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
             _clock = clock ?? throw new ArgumentNullException(nameof(clock));
             _configurationService = configurationService ?? throw new ArgumentNullException(nameof(configurationService));
             _jobRepository = jobRepository ?? throw new ArgumentNullException(nameof(jobRepository));
+            _coreUpdatePreparer = coreUpdatePreparer ?? throw new ArgumentNullException(nameof(coreUpdatePreparer));
+            _syncActivityValidator = syncActivityValidator ?? throw new ArgumentNullException(nameof(syncActivityValidator));
             _combGuidGenerator = combGuidGenerator ?? throw new ArgumentNullException(nameof(combGuidGenerator));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public async Task<ISyncActivity> Sync()
+        public async Task Sync()
         {
-            var utcNow = _clock.UtcNow;
-            var syncJob = new SyncActivity(_combGuidGenerator.Generate(), utcNow);
-            SyncProcessingState syncState = default(SyncProcessingState);
+            ISyncActivity syncJob = new SyncActivity(_combGuidGenerator.Generate(), _clock.UtcNow);
+            var syncState = default(SyncProcessingState);
 
             _logger.LogInformation("Starting MP to HubSpot one-way sync operations (create first, then update).");
             try
@@ -59,17 +66,35 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
                 if (syncState == SyncProcessingState.Processing)
                 {
                     _logger.LogWarning("Job is already currently processing.");
-                    return syncJob;
+                    return;
                 }
 
+                // set job processing state; get last successful sync dates
                 syncState = _jobRepository.SetSyncJobProcessingState(SyncProcessingState.Processing);
-                syncJob.PreviousSyncDates = _configurationService.GetLastSuccessfulSyncDates();
-                syncJob.CreateOperation = Create(syncJob.PreviousSyncDates.CreateSyncDate);
-                syncJob.TotalContacts = syncJob.CreateOperation.TotalContacts;
-                _jobRepository.SetLastSuccessfulSyncDate(new SyncDates { CreateSyncDate = syncJob.CreateOperation.Execution.StartUtc });
-                syncState = _jobRepository.SetSyncJobProcessingState(SyncProcessingState.Idle);
+                var syncDates = syncJob.PreviousSyncDates = _configurationService.GetLastSuccessfulSyncDates();
 
-                return syncJob;
+                try
+                {
+                    // create contacts
+                    syncJob.NewRegistrationOperation = Create(syncJob.PreviousSyncDates.RegistrationSyncDate);
+                    if (_syncActivityValidator.Validate(syncJob, ruleSet: RuleSetName.Registration).IsValid)
+                    {
+                        syncDates.RegistrationSyncDate = syncJob.NewRegistrationOperation.Execution.StartUtc;
+                        _jobRepository.SetLastSuccessfulSyncDates(syncDates);
+                    }
+                }
+                catch { /* logging has already happened; suppressing so core update process can run */ }
+
+                // update core contact properties
+                syncJob.CoreUpdateOperation = Update(syncJob.PreviousSyncDates.CoreUpdateSyncDate);
+                if (_syncActivityValidator.Validate(syncJob, ruleSet: RuleSetName.CoreUpdate).IsValid)
+                {
+                    syncDates.CoreUpdateSyncDate = syncJob.CoreUpdateOperation.Execution.StartUtc;
+                    _jobRepository.SetLastSuccessfulSyncDates(syncDates);
+                }
+
+                // reset sync job processing state
+                syncState = _jobRepository.SetSyncJobProcessingState(SyncProcessingState.Idle);
             }
             catch (Exception exc)
             {
@@ -86,42 +111,71 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
             }
         }
 
-        public ISyncActivityOperation Create(DateTime lastSuccessfulSyncDate)
+        private ISyncActivityNewRegistrationOperation Create(DateTime lastSuccessfulSyncDate)
         {
-            var activity = new SyncActivityOperation(_clock.UtcNow) {PreviousSyncDate = lastSuccessfulSyncDate};
+            var activity = new SyncActivityNewRegistrationOperation(_clock.UtcNow) {PreviousSyncDate = lastSuccessfulSyncDate};
 
             try
             {
                 _logger.LogInformation("Starting new MP registrations to HubSpot one-way sync operation...");
-                // convert this to be the invocation of a func for requesting MP data (passed in as an argument to this method)
                 var newContacts = _ministryPlatformContactRepository.GetNewlyRegisteredContacts(lastSuccessfulSyncDate); // talk to MP
-
-                _logger.LogInformation("Creating newly registered MP contacts in HubSpot...");
-                activity.BulkSyncResult = _hubSpotContactCreatorUpdater.BulkCreateOrUpdate(_mapper.Map<BulkContact[]>(newContacts));
-                activity.TotalContacts = activity.BulkSyncResult.TotalContacts;
-                _jobRepository.SaveHubSpotApiDailyRequestCount(activity.BulkSyncResult.BatchCount, activity.Execution.StartUtc);
-
-                if (activity.BulkSyncResult.TotalContacts == 0 || // either nothing to do *OR* all contacts were synced to HubSpot successfully
-                    activity.BulkSyncResult.SuccessCount == activity.BulkSyncResult.TotalContacts)
-                {
-                    return activity;
-                }
-
-                // convert this to be the invocation of a func for serial create or update (passed in as an argument to this method)
-                activity.SerialSyncResult = _hubSpotContactCreatorUpdater.SerialCreate(activity.BulkSyncResult.GetContactsThatFailedToSync(_mapper));
-                _jobRepository.SaveHubSpotApiDailyRequestCount(activity.SerialSyncResult.TotalContacts, activity.Execution.StartUtc);
-
+                activity.BulkCreateSyncResult = _hubSpotContactCreatorUpdater.BulkCreateOrUpdate(_mapper.Map<BulkContact[]>(newContacts));
+                activity.SerialCreateSyncResult = _hubSpotContactCreatorUpdater.SerialCreate(activity.BulkCreateSyncResult.GetContactsThatFailedToSync(_mapper));
                 return activity;
             }
             catch (Exception exc)
             {
-                _logger.LogError(CoreEvent.Exception, exc, "An exception occurred while syncing contacts to HubSpot.");
+                _logger.LogError(CoreEvent.Exception, exc, "An exception occurred while syncing new MP contacts to HubSpot.");
                 throw;
             }
-            finally // *** ALWAYS *** capture the activity, even if the job is already processing or an exception occurs
+            finally // *** ALWAYS *** capture the HubSpot API request count, even if an exception occurs
             {
                 activity.Execution.FinishUtc = _clock.UtcNow;
+                _jobRepository.SaveHubSpotApiDailyRequestCount(activity.HubSpotApiRequestCount, activity.Execution.StartUtc);
             }
+        }
+
+        private ISyncActivityCoreUpdateOperation Update(DateTime lastSuccessfulSyncDate)
+        {
+            var activity = new SyncActivityCoreUpdateOperation(_clock.UtcNow) { PreviousSyncDate = lastSuccessfulSyncDate };
+
+            try
+            {
+                _logger.LogInformation("Starting MP contact core updates to HubSpot one-way sync operation...");
+                var dto = _coreUpdatePreparer.Prepare(_ministryPlatformContactRepository.GetContactUpdates(lastSuccessfulSyncDate));
+
+                // try email changed update operation and retry as create operation for any contacts that do not yet exist in HubSpot
+                activity.EmailChangedSyncResult = _hubSpotContactCreatorUpdater.SerialUpdate(dto.EmailChangedContacts);
+                activity.RetryEmailChangeAsCreateSyncResult = RetryWhenContactsDoNotYetExistInHubSpot(activity.EmailChangedSyncResult);
+
+                // try core update change operation and retry as create operation for any contacts that do not yet exist in HubSpot
+                activity.CoreUpdateSyncResult = _hubSpotContactCreatorUpdater.SerialUpdate(dto.CoreOnlyChangedContacts);
+                activity.RetryCoreUpdateAsCreateSyncResult = RetryWhenContactsDoNotYetExistInHubSpot(activity.CoreUpdateSyncResult);
+                return activity;
+            }
+            catch (Exception exc)
+            {
+                _logger.LogError(CoreEvent.Exception, exc, "An exception occurred while syncing MP contact core updates to HubSpot.");
+                throw;
+            }
+            finally // *** ALWAYS *** capture the HubSpot API request count, even if an exception occurs
+            {
+                activity.Execution.FinishUtc = _clock.UtcNow;
+                _jobRepository.SaveHubSpotApiDailyRequestCount(activity.HubSpotApiRequestCount, activity.Execution.StartUtc);
+            }
+        }
+
+        private SerialCreateSyncResult<EmailAddressCreatedContact> RetryWhenContactsDoNotYetExistInHubSpot<T>(CoreUpdateResult<T> originalResult)
+            where T : IUpdateContact
+        {
+            if (originalResult.ContactDoesNotExistCount > 0)
+            {   // retries contacts that do not exist... as a create operation
+                var retryResult = _hubSpotContactCreatorUpdater.SerialCreate(originalResult.ContactsThatDoNotExist.ToArray());
+                originalResult.ContactsThatDoNotExist.Clear(); // blowing these away to save space in LiteDb when activity is persisted
+                return retryResult;
+            }
+
+            return new SerialCreateSyncResult<EmailAddressCreatedContact>();
         }
     }
 }

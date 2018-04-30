@@ -1,9 +1,4 @@
-﻿using System;
-using System.Linq;
-using System.Net;
-using System.Net.Http;
-using System.Threading;
-using Crossroads.Service.HubSpot.Sync.Core.Serialization;
+﻿using Crossroads.Service.HubSpot.Sync.Core.Serialization;
 using Crossroads.Service.HubSpot.Sync.Core.Time;
 using Crossroads.Service.HubSpot.Sync.Core.Utilities;
 using Crossroads.Service.HubSpot.Sync.Data.HubSpot.Models.Request;
@@ -11,6 +6,10 @@ using Crossroads.Service.HubSpot.Sync.Data.HubSpot.Models.Response;
 using Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto;
 using Crossroads.Web.Common.Extensions;
 using Microsoft.Extensions.Logging;
+using System;
+using System.Linq;
+using System.Net;
+using System.Net.Http;
 
 namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
 {
@@ -25,12 +24,7 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
         private readonly string _hubSpotApiKey;
         private readonly ILogger<CreateOrUpdateContactsInHubSpot> _logger;
 
-        public CreateOrUpdateContactsInHubSpot(
-            IHttpPost http,
-            IClock clock,
-            IJsonSerializer serializer,
-            ISleep sleeper,
-            string hubSpotApiKey,
+        public CreateOrUpdateContactsInHubSpot(IHttpPost http, IClock clock, IJsonSerializer serializer, ISleep sleeper, string hubSpotApiKey,
             ILogger<CreateOrUpdateContactsInHubSpot> logger)
         {
             _http = http ?? throw new ArgumentNullException(nameof(http));
@@ -74,7 +68,7 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
                                 Count = contactBatch.Length,
                                 BatchNumber = currentBatchNumber + 1,
                                 HttpStatusCode = response.StatusCode,
-                                Reason = GetContent(response),
+                                Exception = GetContent<HubSpotException>(response),
                                 Contacts = contactBatch
                             });
 
@@ -82,8 +76,7 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
                             // defined in the https://stackoverflow.com/a/22645395
                             _logger.LogWarning($@"REJECTED: contact batch {currentBatchNumber} of {run.BatchCount}
 httpstatuscode: {(int) response.StatusCode}
-reason: {run.FailedBatches[run.FailedBatches.Count - 1].Reason}");
-
+More details will be available in the serial processing logs.");
                             break;
                     }
 
@@ -98,9 +91,9 @@ reason: {run.FailedBatches[run.FailedBatches.Count - 1].Reason}");
             }
         }
 
-        public SerialSyncResult SerialCreate(SerialContact[] contacts)
+        public SerialCreateSyncResult<TCreateContact> SerialCreate<TCreateContact>(TCreateContact[] contacts) where TCreateContact : IContact
         {
-            var run = new SerialSyncResult(_clock.UtcNow) { TotalContacts = contacts.Length };
+            var run = new SerialCreateSyncResult<TCreateContact>(_clock.UtcNow) { TotalContacts = contacts.Length };
             try
             {
                 for (int currentContactIndex = 0; currentContactIndex < contacts.Length; currentContactIndex++)
@@ -115,32 +108,23 @@ reason: {run.FailedBatches[run.FailedBatches.Count - 1].Reason}");
 
                     switch (response.StatusCode)
                     {
-                        case HttpStatusCode.OK: // deemed successful by HubSpot
+                        case HttpStatusCode.OK: // 200: deemed successful by HubSpot
                             run.SuccessCount++;
                             _logger.LogDebug($"OK: contact {currentContactIndex + 1} of {contacts.Length}");
                             break;
+                        case HttpStatusCode.Conflict: // 409: contact already exists
+                            run.ContactAlreadyExistsCount++;
+                            break;
                         default: // contact was rejected for creation
-                            var contactAlreadyExists = ContactAlreadyExists(response);
-                            if (contactAlreadyExists)
-                            {
-                                run.ContactAlreadyExistsCount++;
-                                continue;
-                            }
-
                             run.FailureCount++;
-                            run.Failures.Add(new SerialSyncFailure
+                            var failure = new SerialCreateSyncFailure<TCreateContact>
                             {
                                 HttpStatusCode = response.StatusCode,
-                                Reason = GetContent(response),
+                                Exception = GetContent<HubSpotException>(response),
                                 Contact = contact
-                            });
-                            // cast to print out the HTTP status code, just in case what's returned isn't
-                            // defined in the https://stackoverflow.com/a/22645395
-                            _logger.LogWarning($@"REJECTED: contact {currentContactIndex + 1} of {contacts.Length}
-httpstatuscode: {(int) response.StatusCode}
-reason: {run.Failures[run.Failures.Count - 1].Reason}
-contact: {_serializer.Serialize(contacts)}");
-
+                            };
+                            run.Failures.Add(failure);
+                            LogContactFailure(failure, contact, currentContactIndex, contacts.Length);
                             break;
                     }
 
@@ -156,19 +140,55 @@ contact: {_serializer.Serialize(contacts)}");
         }
 
         /// <summary>
-        /// Let's exclude any "Contact already exists" errors b/c this is an acceptable failure when attempting to
-        /// explicitly create a contact.
+        /// https://developers.hubspot.com/docs/methods/contacts/update_contact-by-email
         /// </summary>
-        private bool ContactAlreadyExists(HttpResponseMessage response)
+        public CoreUpdateResult<TUpdateContact> SerialUpdate<TUpdateContact>(TUpdateContact[] contacts) where TUpdateContact : IUpdateContact
         {
-            if (response.StatusCode != HttpStatusCode.Conflict)
-                return false;
+            var run = new CoreUpdateResult<TUpdateContact>(_clock.UtcNow) { TotalContacts = contacts.Length };
+            try
+            {
+                for (int currentContactIndex = 0; currentContactIndex < contacts.Length; currentContactIndex++)
+                {
+                    var contact = contacts[currentContactIndex];
+                    var response = _http.Post($"contacts/v1/contact/email/{contact.Email}/profile?hapikey={_hubSpotApiKey}", contact);
+                    if (response == null)
+                    {
+                        run.FailureCount++;
+                        continue;
+                    }
 
-            var conflict = GetContent<Conflict>(response);
+                    switch (response.StatusCode)
+                    {
+                        case HttpStatusCode.NoContent: // deemed successful by HubSpot
+                            run.SuccessCount++;
+                            _logger.LogDebug($"No Content: contact {currentContactIndex + 1} of {contacts.Length}");
+                            break;
+                        case HttpStatusCode.NotFound:
+                            run.ContactDoesNotExistCount++;
+                            run.ContactsThatDoNotExist.Add(contact.ContactDoesNotExistContingency);
+                            break;
+                        default: // contact was rejected for creation
+                            run.FailureCount++;
+                            var failure = new CoreUpdateFailure<TUpdateContact>
+                            {
+                                HttpStatusCode = response.StatusCode,
+                                Exception = GetContent<HubSpotException>(response),
+                                Contact = contact
+                            };
+                            run.Failures.Add(failure);
+                            LogContactFailure(failure, contact, currentContactIndex, contacts.Length);
+                            break;
+                    }
 
-            // a bit brittle (should HubSpot change the error), but the worst that happens is we capture contact exists
-            // errors in our failure collection stored in the activity
-            return conflict?.Error.Equals("CONTACT_EXISTS", StringComparison.OrdinalIgnoreCase) ?? false;
+                    PumpTheBreaksEvery7RequestsToAvoid429Exceptions(currentContactIndex);
+                }
+
+                return run;
+            }
+            finally
+            {
+                run.Execution.FinishUtc = _clock.UtcNow;
+            }
         }
 
         private void PumpTheBreaksEvery7RequestsToAvoid429Exceptions(int requestCount)
@@ -213,6 +233,19 @@ contact: {_serializer.Serialize(contacts)}");
                 _logger.LogError(exc, "Exception occurred while getting content stream.");
                 return default(T);
             }
+        }
+
+        private void LogContactFailure(IFailureDetails failure, IContact contact, int currentContactIndex, int contactCount)
+        {
+            // cast to print out the HTTP status code, just in case what's returned isn't
+            // defined in the enum https://stackoverflow.com/a/22645395
+
+            var hubSpotException = failure.Exception;
+            _logger.LogWarning($@"REJECTED: contact {currentContactIndex + 1} of {contactCount}
+httpstatuscode: {(int)failure.HttpStatusCode}
+issue: {hubSpotException?.Message} for ({hubSpotException?.ValidationResults?.FirstOrDefault()?.Name})
+error: {hubSpotException?.ValidationResults?.FirstOrDefault()?.Error}
+contact: {_serializer.Serialize(contact)}");
         }
     }
 }

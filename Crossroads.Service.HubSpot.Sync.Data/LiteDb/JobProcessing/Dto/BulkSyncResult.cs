@@ -5,7 +5,10 @@ namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto
 {
     public class BulkSyncResult
     {
-        public BulkSyncResult() { }
+        public BulkSyncResult()
+        {
+            FailedBatches = new List<BulkSyncFailure>();
+        }
 
         public BulkSyncResult(DateTime executionStartTime)
         {

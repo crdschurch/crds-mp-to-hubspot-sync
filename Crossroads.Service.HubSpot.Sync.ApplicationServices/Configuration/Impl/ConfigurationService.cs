@@ -32,13 +32,17 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Configuration.Impl
             _logger.LogInformation("Fetching last successful sync date...");
 
             var syncDates = _liteDbConfigurationProvider.Get<LastSuccessfulSyncDateInfo, SyncDates>();
-            var syncDate = syncDates.CreateSyncDate != default(DateTime)
-                ? syncDates
-                : new SyncDates {CreateSyncDate = _inauguralSync.Date, UpdateSyncDate = _inauguralSync.Date};
+            if(syncDates.RegistrationSyncDate == default(DateTime)) // if this is true, we've never run for new MP registrations
+                syncDates.RegistrationSyncDate = _inauguralSync.RegistrationSyncDate;
 
-            _logger.LogInformation($"Last successful sync date: {syncDate}");
+            if (syncDates.CoreUpdateSyncDate == default(DateTime)) // if this is true, we've never run for core MP contact updates
+                syncDates.CoreUpdateSyncDate = _inauguralSync.CoreUpdateSyncDate;
 
-            return syncDate;
+            _logger.LogInformation($@"Last successful sync dates.
+new registration: {syncDates.RegistrationSyncDate}
+updates: {syncDates.CoreUpdateSyncDate}");
+
+            return syncDates;
         }
 
         public SyncProcessingState GetCurrentJobProcessingState()

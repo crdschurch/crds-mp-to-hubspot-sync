@@ -9,7 +9,7 @@ as
     select              Contacts.Contact_ID as MinistryPlatformContactId,
                         Contacts.Nickname as Firstname,
                         Contacts.Last_Name as Lastname,
-                        dp_Users.[User_Name] as Email, -- switching to Contacts.Email_Address, b/c it is synced over to dp_Users.User_Name, making it the source of truth
+                        dp_Users.[User_Name] as Email, -- switched to dp_Users.User_Name based on dbo.crds_service_update_email_nightly
                         isnull(Congregations.Congregation_Name, '') as Community,
                         isnull(Marital_Statuses.Marital_Status, '') as MaritalStatus,
                         isnull(Genders.Gender, '') as Gender

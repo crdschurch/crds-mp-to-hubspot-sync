@@ -74,7 +74,7 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
 
                             // cast to print out the HTTP status code, just in case what's returned isn't
                             // defined in the https://stackoverflow.com/a/22645395
-                            _logger.LogWarning($@"REJECTED: contact batch {currentBatchNumber} of {run.BatchCount}
+                            _logger.LogWarning($@"REJECTED: contact batch {currentBatchNumber + 1} of {run.BatchCount}
 httpstatuscode: {(int) response.StatusCode}
 More details will be available in the serial processing logs.");
                             break;

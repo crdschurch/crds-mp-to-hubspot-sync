@@ -8,7 +8,7 @@ namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing
 {
     public interface IJobRepository
     {
-        bool SetLastSuccessfulSyncDate(SyncDates syncDates);
+        SyncDates SetLastSuccessfulSyncDates(SyncDates syncDates);
 
         SyncProcessingState SetSyncJobProcessingState(SyncProcessingState syncProcessingState);
 

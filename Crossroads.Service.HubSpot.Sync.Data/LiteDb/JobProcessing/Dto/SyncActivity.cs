@@ -1,6 +1,6 @@
-﻿using System;
-using Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Enum;
+﻿using Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Enum;
 using LiteDB;
+using System;
 
 namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto
 {
@@ -13,6 +13,8 @@ namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto
             SyncActivityId = syncActivityId;
             Execution = new ExecutionTime(executionStartTime);
             Id = $"{nameof(SyncActivity)}_{Execution.StartUtc:u}"; // ISO8601: universal/sortable
+            NewRegistrationOperation = new SyncActivityNewRegistrationOperation();
+            CoreUpdateOperation = new SyncActivityCoreUpdateOperation();
         }
 
         [BsonField("_id")]
@@ -26,11 +28,23 @@ namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto
 
         public SyncDates PreviousSyncDates { get; set; }
 
-        public int TotalContacts { get; set; }
+        public int TotalContacts => NewRegistrationOperation.TotalContacts +
+                                    CoreUpdateOperation.TotalContacts;
 
-        public ISyncActivityOperation CreateOperation { get; set; }
+        public int SuccessCount => NewRegistrationOperation.SuccessCount + CoreUpdateOperation.SuccessCount;
 
-        public ISyncActivityOperation UpdateOperation { get; set; }
+        public int ContactAlreadyExistsCount => NewRegistrationOperation.ContactAlreadyExistsCount +
+                                                CoreUpdateOperation.ContactAlreadyExistsCount;
+
+        public int FailureCount => NewRegistrationOperation.FailureCount +
+                                   CoreUpdateOperation.RetryFailureCount;
+
+        public int HubSpotApiRequestCount => NewRegistrationOperation.HubSpotApiRequestCount +
+                                             CoreUpdateOperation.HubSpotApiRequestCount;
+
+        public ISyncActivityNewRegistrationOperation NewRegistrationOperation { get; set; }
+
+        public ISyncActivityCoreUpdateOperation CoreUpdateOperation { get; set; }
 
         public SyncProcessingState SyncProcessingState { get; set; }
     }

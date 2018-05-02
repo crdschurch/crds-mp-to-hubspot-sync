@@ -4,16 +4,12 @@ using Crossroads.Service.HubSpot.Sync.Data.HubSpot.Models.Response;
 
 namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto
 {
-    public class BulkSyncFailure : IFailureDetails
+    public class CoreUpdateFailure<TUpdateContact> : IFailureDetails where TUpdateContact : IUpdateContact
     {
-        public int Count { get; set; }
-
         public HttpStatusCode HttpStatusCode { get; set; }
 
         public HubSpotException Exception { get; set; }
 
-        public int BatchNumber { get; set; }
-
-        public BulkContact[] Contacts { get; set; }
+        public TUpdateContact Contact { get; set; }
     }
 }

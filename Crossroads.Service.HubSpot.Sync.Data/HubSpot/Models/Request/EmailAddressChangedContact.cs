@@ -22,5 +22,8 @@ namespace Crossroads.Service.HubSpot.Sync.Data.HubSpot.Models.Request
 
         [JsonIgnore]
         public EmailAddressCreatedContact ContactDoesNotExistContingency { get; set; }
+
+        [JsonIgnore]
+        public CoreOnlyChangedContact ContactAlreadyExistsContingency { get; set; }
     }
 }

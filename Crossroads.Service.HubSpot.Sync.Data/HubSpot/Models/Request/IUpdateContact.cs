@@ -20,5 +20,15 @@ namespace Crossroads.Service.HubSpot.Sync.Data.HubSpot.Models.Request
         /// </summary>
         [JsonIgnore]
         EmailAddressCreatedContact ContactDoesNotExistContingency { get; set; }
+
+        /// <summary>
+        /// Contingency for when the email address of the contact we've attempted to update
+        /// ALREADY exists in HubSpot. Will accommodate the scenario by retrying with core
+        /// only updates for the updated email address. We are not fearful of overwriting
+        /// another contact's information, b/c a given email address can belong to only ONE
+        /// MP user (dbo.dp_Users.User_Name is unique, according to tribal knowledge)
+        /// </summary>
+        [JsonIgnore]
+        CoreOnlyChangedContact ContactAlreadyExistsContingency { get; set; }
     }
 }

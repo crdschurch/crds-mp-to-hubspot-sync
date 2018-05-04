@@ -163,9 +163,13 @@ More details will be available in the serial processing logs.");
                             run.SuccessCount++;
                             _logger.LogDebug($"No Content: contact {currentContactIndex + 1} of {contacts.Length}");
                             break;
-                        case HttpStatusCode.NotFound:
+                        case HttpStatusCode.NotFound: // does not exist
                             run.ContactDoesNotExistCount++;
                             run.ContactsThatDoNotExist.Add(contact.ContactDoesNotExistContingency);
+                            break;
+                        case HttpStatusCode.Conflict: // already exists (when a contact attempts to update their email address to one already claimed)
+                            run.ContactAlreadyExistsCount++;
+                            run.ContactsAlreadyExist.Add(contact.ContactAlreadyExistsContingency);
                             break;
                         default: // contact was rejected for creation
                             run.FailureCount++;

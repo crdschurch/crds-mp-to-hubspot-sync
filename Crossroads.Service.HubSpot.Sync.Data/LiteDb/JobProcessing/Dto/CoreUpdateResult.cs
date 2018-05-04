@@ -16,6 +16,7 @@ namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto
             Execution = new ExecutionTime(executionStartTime);
             Failures = new List<CoreUpdateFailure<TUpdateContact>>();
             ContactsThatDoNotExist = new List<EmailAddressCreatedContact>();
+            ContactsAlreadyExist = new List<CoreOnlyChangedContact>();
         }
 
         public IExecutionTime Execution { get; set; }
@@ -23,6 +24,14 @@ namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto
         public int TotalContacts { get; set; }
 
         public int SuccessCount { get; set; }
+
+        /// <summary>
+        /// (In the context of an update operation) when a contact attempts to update their email
+        /// address to one already claimed in HubSpot.
+        /// </summary>
+        public int ContactAlreadyExistsCount { get; set; }
+
+        public List<CoreOnlyChangedContact> ContactsAlreadyExist { get; set; }
 
         public int FailureCount { get; set; }
 

@@ -13,6 +13,7 @@ using Crossroads.Service.HubSpot.Sync.Data.MP;
 using FluentValidation;
 using Microsoft.Extensions.Logging;
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
@@ -149,7 +150,8 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
                 activity.RetryEmailChangeAsCreateSyncResult = RetryWhenContactsDoNotYetExistInHubSpot(activity.EmailChangedSyncResult);
 
                 // try core update change operation and retry as create operation for any contacts that do not yet exist in HubSpot
-                activity.CoreUpdateSyncResult = _hubSpotContactCreatorUpdater.SerialUpdate(dto.CoreOnlyChangedContacts);
+                var coreUpdates = dto.CoreOnlyChangedContacts.Union(activity.EmailChangedSyncResult.ContactsAlreadyExist).ToArray();
+                activity.CoreUpdateSyncResult = _hubSpotContactCreatorUpdater.SerialUpdate(coreUpdates);
                 activity.RetryCoreUpdateAsCreateSyncResult = RetryWhenContactsDoNotYetExistInHubSpot(activity.CoreUpdateSyncResult);
                 return activity;
             }

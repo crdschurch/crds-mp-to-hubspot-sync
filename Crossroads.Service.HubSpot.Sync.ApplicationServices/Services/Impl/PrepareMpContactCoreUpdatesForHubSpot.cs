@@ -28,11 +28,11 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
                     contactKeyValue.Value.Exists(update => update.PropertyName.Equals(emailPropertyName, StringComparison.OrdinalIgnoreCase));
 
                 var contactToCreate = _mapper.Map<EmailAddressCreatedContact>(contactKeyValue.Value);
+                var coreUpdate = _mapper.Map<CoreOnlyChangedContact>(contactKeyValue.Value);
 
                 // MP audit log doesn't contain email address in contact's manifest of changes -- simplest course, map, move on
                 if (containsEmailAddressChange == false)
                 {
-                    var coreUpdate = _mapper.Map<CoreOnlyChangedContact>(contactKeyValue.Value);
                     coreUpdate.ContactDoesNotExistContingency = contactToCreate;
                     coreOnlyChangedContacts.Add(coreUpdate);
                     continue;
@@ -40,6 +40,7 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
 
                 var emailUpdate = _mapper.Map<EmailAddressChangedContact>(contactKeyValue.Value);
                 emailUpdate.ContactDoesNotExistContingency = contactToCreate;
+                emailUpdate.ContactAlreadyExistsContingency = coreUpdate;
                 emailAddressChangedContacts.Add(emailUpdate);
             }
 

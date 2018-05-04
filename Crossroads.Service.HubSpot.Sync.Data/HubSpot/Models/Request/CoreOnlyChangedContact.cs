@@ -17,5 +17,8 @@ namespace Crossroads.Service.HubSpot.Sync.Data.HubSpot.Models.Request
 
         [JsonIgnore]
         public EmailAddressCreatedContact ContactDoesNotExistContingency { get; set; }
+
+        [JsonIgnore] // TODO: will NEVER be used for this object. code smell, think through this leaky implementation later.
+        public CoreOnlyChangedContact ContactAlreadyExistsContingency { get; set; }
     }
 }

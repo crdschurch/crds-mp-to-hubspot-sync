@@ -31,7 +31,7 @@ as
                             and             AuditDescription like '%Updated'  --This will capture "Updated" and "Mass Updated"
                             and             NewValue is not null
                             and             NewValue <> ''
-                            and             isnull(PreviousValue, '') <> NewValue
+                            and             lower(isnull(PreviousValue, '')) <> lower(NewValue) -- only if it really changes (case doesn't count)
                             group by        RecordId,
                                             FieldName,
                                             TableName
@@ -126,6 +126,7 @@ as
         where           (Contacts.__Age > 12 or Contacts.__Age is null)
         and             Contacts.Email_Address is not null
         and             Contacts.Email_Address <> ''
+        and             Contacts.Contact_Status_ID = 1 -- active (2 = inactive, 3 = deceased) -> dbo.Contact_Statuses
 
         -- significant where clause criteria, b/c a contact with a user record but an empty
         -- Contacts.Email_Address indicates it has hard bounced and should not be used, meaning
@@ -181,4 +182,3 @@ as
     from            HouseholdAuditLog
     join            RelevantContacts
     on              RelevantContacts.HouseholdId = HouseholdAuditLog.HouseholdId;
-

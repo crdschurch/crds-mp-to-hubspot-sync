@@ -24,6 +24,7 @@ as
     where               (Contacts.__Age > 12 or Contacts.__Age is null)
     and                 Contacts.Email_Address is not null
     and                 Contacts.Email_Address <> ''
+    and                 Contacts.Contact_Status_ID = 1 -- active (2 = inactive, 3 = deceased) -> dbo.Contact_Statuses
     and                 Participants.Participant_Start_Date > @LastSuccessfulSyncDate;
 
     -- significant where clause criteria, b/c a contact with a user record but an empty

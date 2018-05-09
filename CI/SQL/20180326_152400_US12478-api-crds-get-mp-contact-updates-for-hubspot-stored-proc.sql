@@ -3,7 +3,7 @@
 -- ... is now ...
 -- isnull(PreviousValue, '') <> NewValue
 -- ...consult the following url: https://docs.microsoft.com/en-us/sql/t-sql/statements/set-ansi-nulls-transact-sql?view=sql-server-2017
-use [MinistryPlatform]
+use MinistryPlatform
 go
 
 -- gets a list of contact data updated after a given date
@@ -29,9 +29,6 @@ as
                             and             FieldName in ('User_Name')
                             and             TableName = 'dp_Users'
                             and             AuditDescription like '%Updated'  --This will capture "Updated" and "Mass Updated"
-                            and             NewValue is not null
-                            and             NewValue <> ''
-                            and             lower(isnull(PreviousValue, '')) <> lower(NewValue) -- only if it really changes (case doesn't count)
                             group by        RecordId,
                                             FieldName,
                                             TableName
@@ -40,6 +37,9 @@ as
         and             AuditLog.OperationDateTime = MostRecentFieldChanges.Updated
         and             AuditLog.FieldName = MostRecentFieldChanges.FieldName
         and             AuditLog.TableName = MostRecentFieldChanges.TableName
+        where           AuditLog.NewValue is not null
+        and             AuditLog.NewValue <> ''
+        and             lower(isnull(AuditLog.PreviousValue, '')) <> lower(AuditLog.NewValue) -- we only want email addresses that have actually changed and case differences do not qualify
     ),
     ContactAuditLog as (
         select          MostRecentFieldChanges.ContactId,
@@ -64,9 +64,6 @@ as
                             and             FieldName in ('Nickname', 'Last_Name', 'Marital_Status_ID', 'Gender_ID')
                             and             TableName = 'Contacts'
                             and             AuditDescription like '%Updated'  --This will capture "Updated" and "Mass Updated"
-                            and             NewValue is not null
-                            and             NewValue <> ''
-                            and             isnull(PreviousValue, '') <> NewValue
                             group by        RecordId,
                                             FieldName,
                                             TableName
@@ -75,6 +72,9 @@ as
         and             AuditLog.OperationDateTime = MostRecentFieldChanges.Updated
         and             AuditLog.FieldName = MostRecentFieldChanges.FieldName
         and             AuditLog.TableName = MostRecentFieldChanges.TableName
+        where           AuditLog.NewValue is not null
+        and             AuditLog.NewValue <> ''
+        and             isnull(AuditLog.PreviousValue, '') <> AuditLog.NewValue
     ),
     HouseholdAuditLog as (
         select          MostRecentFieldChanges.HouseholdId,
@@ -94,9 +94,6 @@ as
                             and             FieldName = 'Congregation_ID'
                             and             TableName = 'Households'
                             and             AuditDescription like '%Updated'  --This will capture "Updated" and "Mass Updated"
-                            and             NewValue is not null
-                            and             NewValue <> ''
-                            and             isnull(PreviousValue, '') <> NewValue
                             group by        RecordId,
                                             FieldName,
                                             TableName
@@ -105,6 +102,9 @@ as
         and             AuditLog.OperationDateTime = MostRecentFieldChanges.Updated
         and             AuditLog.FieldName = MostRecentFieldChanges.FieldName
         and             AuditLog.TableName = MostRecentFieldChanges.TableName
+        and             AuditLog.NewValue is not null
+        and             AuditLog.NewValue <> ''
+        and             isnull(AuditLog.PreviousValue, '') <> AuditLog.NewValue
     ),
     RelevantContacts as ( -- contacts of age (if we know their age), with logins (they've registered).
         select          Contacts.Contact_ID as MinistryPlatformContactId,
@@ -134,6 +134,7 @@ as
         -- marketing purposes would be a mistake
     )
 
+    --              email address legitimately (not casing, etc) changed
     select          RelevantContacts.MinistryPlatformContactId,
                     UserAuditLog.PropertyName,
                     UserAuditLog.PreviousValue,
@@ -151,6 +152,7 @@ as
 
     union
 
+    --              nick name, last name, marital status, gender changed
     select          RelevantContacts.MinistryPlatformContactId,
                     ContactAuditLog.PropertyName,
                     ContactAuditLog.PreviousValue,
@@ -168,6 +170,7 @@ as
 
     union
 
+    --              community/congregation changed
     select          RelevantContacts.MinistryPlatformContactId,
                     HouseholdAuditLog.PropertyName,
                     HouseholdAuditLog.PreviousValue,

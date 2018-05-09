@@ -32,6 +32,7 @@ as
                     KidsClubStudentMinistryCounts.Number_of_12th_Graders, 
                     KidsClubStudentMinistryCounts.Number_of_Graduated_Seniors
 
+    --              Attach kiddo info to any contact we want in HubSpot (could even be the minor themselves, if they're registered)
     from            dbo.cr_ChildAgeAndGradeCountsByHousehold KidsClubStudentMinistryCounts
     join            dbo.Contacts on Contacts.Household_ID = KidsClubStudentMinistryCounts.HouseholdId
     join            dbo.dp_Users on dp_Users.Contact_ID = Contacts.Contact_ID

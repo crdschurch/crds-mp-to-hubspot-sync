@@ -3,7 +3,7 @@ using Newtonsoft.Json;
 
 namespace Crossroads.Service.HubSpot.Sync.Data.HubSpot.Models.Request
 {
-    public class BulkContact : IBulkContact
+    public class BulkContact : IContact
     {
         [JsonProperty(PropertyName = "email")]
         public string Email { get; set; }

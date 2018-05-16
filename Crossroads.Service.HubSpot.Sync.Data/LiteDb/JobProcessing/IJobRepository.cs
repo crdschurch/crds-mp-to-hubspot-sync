@@ -18,9 +18,9 @@ namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing
 
         List<HubSpotApiDailyRequestCount> GetHubSpotApiDailyRequestCount();
 
-        ISyncActivity GetActivity(string syncJobActivityId);
+        string GetActivity(string syncJobActivityId);
 
-        ISyncActivity GetMostRecentActivity();
+        string GetMostRecentActivity();
 
         List<string> GetActivityIds(int limit);
     }

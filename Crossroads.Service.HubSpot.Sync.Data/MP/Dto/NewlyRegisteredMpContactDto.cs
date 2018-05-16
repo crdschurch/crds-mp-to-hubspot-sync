@@ -1,7 +1,7 @@
 ﻿
 namespace Crossroads.Service.HubSpot.Sync.Data.MP.Dto
 {
-    public class NewlyRegisteredMpContactDto
+    public class NewlyRegisteredMpContactDto : IDeveloperIntegrationProperties, ICoreContactProperties
     {
         public string MinistryPlatformContactId { get; set; }
 
@@ -40,11 +40,6 @@ namespace Crossroads.Service.HubSpot.Sync.Data.MP.Dto
         public string MaritalStatus { get; set; }
 
         public string Gender { get; set; }
-
-        /// <summary>
-        /// [HubSpot Definition]: How ready a contact might be for a sale. This can be tied to imports, forms, workflows, or manually by contact.
-        /// </summary>
-        public string LifeCycleStage => "customer";
 
         public string Source => "MP_Registration";
     }

@@ -4,12 +4,12 @@ using Crossroads.Service.HubSpot.Sync.Data.HubSpot.Models.Response;
 
 namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto
 {
-    public class SerialCreateSyncFailure<TContact> : IFailureDetails where TContact : IContact
+    public class SerialSyncFailure : IFailureDetails
     {
         public HttpStatusCode HttpStatusCode { get; set; }
 
         public HubSpotException Exception { get; set; }
 
-        public TContact Contact { get; set; }
+        public IContact Contact { get; set; }
     }
 }

@@ -1,8 +1,4 @@
-﻿
-using System.Collections.Generic;
-using Newtonsoft.Json;
-
-namespace Crossroads.Service.HubSpot.Sync.Data.HubSpot.Models.Request
+﻿namespace Crossroads.Service.HubSpot.Sync.Data.HubSpot.Models.Request
 {
     /// <summary>
     /// Represents the scenario when an existing contact changed their email address.
@@ -13,17 +9,7 @@ namespace Crossroads.Service.HubSpot.Sync.Data.HubSpot.Models.Request
     /// HubSpot account with a spouse's or a child's. If there is no
     /// MinistryPlatformContactId, we'll update and assign it.
     /// </summary>
-    public class EmailAddressChangedContact : IUpdateContact
+    public class EmailAddressChangedContact : SerialContact
     {
-        [JsonIgnore]
-        public string Email { get; set; }
-
-        public List<ContactProperty> Properties { get; set; }
-
-        [JsonIgnore]
-        public EmailAddressCreatedContact ContactDoesNotExistContingency { get; set; }
-
-        [JsonIgnore]
-        public CoreOnlyChangedContact ContactAlreadyExistsContingency { get; set; }
     }
 }

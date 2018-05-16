@@ -16,13 +16,15 @@ namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto
 
         int SuccessCount { get; }
 
-        int ContactAlreadyExistsCount { get; }
+        int EmailAddressAlreadyExistsCount { get; }
 
         int HubSpotApiRequestCount { get; }
 
         ISyncActivityNewRegistrationOperation NewRegistrationOperation { get; set; }
 
         ISyncActivityCoreUpdateOperation CoreUpdateOperation { get; set; }
+
+        ISyncActivityChildAgeAndGradeUpdateOperation ChildAgeAndGradeUpdateOperation { get; set; }
 
         SyncProcessingState SyncProcessingState { get; set; }
     }

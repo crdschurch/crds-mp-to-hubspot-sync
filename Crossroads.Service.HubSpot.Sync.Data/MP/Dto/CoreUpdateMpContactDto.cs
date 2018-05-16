@@ -11,7 +11,7 @@ namespace Crossroads.Service.HubSpot.Sync.Data.MP.Dto
     /// this contact does not yet exist in HubSpot (for whatever reason).
     /// Required fields: First name, Last name, Email, Community (congregation).
     /// </summary>
-    public class MpContactUpdateDto
+    public class CoreUpdateMpContactDto : IDeveloperIntegrationProperties, ICoreContactProperties
     {
         public string MinistryPlatformContactId { get; set; }
 

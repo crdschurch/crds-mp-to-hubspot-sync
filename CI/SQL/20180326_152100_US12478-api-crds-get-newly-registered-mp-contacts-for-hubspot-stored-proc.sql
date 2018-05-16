@@ -1,4 +1,4 @@
-use [MinistryPlatform]
+use MinistryPlatform
 go
 
 -- gets a list of contacts that were created after a given date (presumably, new registrations)

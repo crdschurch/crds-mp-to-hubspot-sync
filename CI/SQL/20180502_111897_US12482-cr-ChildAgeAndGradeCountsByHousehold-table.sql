@@ -2,9 +2,7 @@ use MinistryPlatform
 go
 
 -- drop table dbo.cr_ChildAgeAndGradeCountsByHousehold
-if not exists (
-    select 1 from INFORMATION_SCHEMA.TABLES where TABLE_SCHEMA = 'dbo' and TABLE_NAME = 'cr_ChildAgeAndGradeCountsByHousehold'
-)
+if not exists (select 1 from INFORMATION_SCHEMA.TABLES where TABLE_SCHEMA = 'dbo' and TABLE_NAME = 'cr_ChildAgeAndGradeCountsByHousehold')
 begin
 
     create table dbo.cr_ChildAgeAndGradeCountsByHousehold
@@ -37,8 +35,8 @@ begin
 
     create nonclustered index IDX_cr_ChildAgeAndGradeCountsByHousehold_Hash on dbo.cr_ChildAgeAndGradeCountsByHousehold (Hash);
 
-    create nonclustered index IDX_cr_ChildAgeAndGradeCountsByHousehold_Created on dbo.cr_ChildAgeAndGradeCountsByHousehold (CreatedUtc);
+    create nonclustered index IDX_cr_ChildAgeAndGradeCountsByHousehold_CreatedUtc on dbo.cr_ChildAgeAndGradeCountsByHousehold (CreatedUtc);
 
-    create nonclustered index IDX_cr_ChildAgeAndGradeCountsByHousehold_LastModified on dbo.cr_ChildAgeAndGradeCountsByHousehold (LastModifiedUtc);
+    create nonclustered index IDX_cr_ChildAgeAndGradeCountsByHousehold_LastModifiedUtc on dbo.cr_ChildAgeAndGradeCountsByHousehold (LastModifiedUtc);
 
 end

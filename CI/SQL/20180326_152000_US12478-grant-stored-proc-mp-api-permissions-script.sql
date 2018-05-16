@@ -25,4 +25,9 @@ begin
         @RoleName = 'unauthenticatedCreate',
         @Description = 'Fetches a list detailing the number of children within 20 different age and grade ranges (infancy -> graduated high school seniors) by household for each registered, active contact within that household. This fetched, contact attribute data will be synced to HubSpot and be used to determine which contacts will receive HubSpot-powered Kids Club and Student Ministry email notifications.';
 
+    exec dbo.crds_grant_mp_api_stored_procedure_execution_permission
+        @StoredProcedureName = 'api_crds_set_child_age_and_grade_delta_log_sync_date',
+        @RoleName = 'unauthenticatedCreate',
+        @Description = 'Puts a bow on the age and grade counts sync process by setting the dbo.cr_ChildAgeAndGradeDeltaLog.SyncCompletedUtc when the HubSpot sync process completes successfully.';
+
 end

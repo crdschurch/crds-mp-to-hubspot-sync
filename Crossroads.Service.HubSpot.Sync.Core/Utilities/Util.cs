@@ -41,26 +41,27 @@ namespace Crossroads.Service.HubSpot.Sync.Core.Utilities
             try { methodToMuzzle(); } catch { /* logging has already happened; suppressing so core update process can run */ }
         }
 
-        ///// <summary>
-        ///// https://stackoverflow.com/a/35494197
-        ///// </summary>
-        ///// <typeparam name="T"></typeparam>
-        ///// <typeparam name="TU"></typeparam>
-        ///// <param name="searches"></param>
-        ///// <param name="processItems"></param>
-        ///// <param name="maxDegreeOfParallelism"></param>
-        //public static void RateLimit<T, TU>(List<T> searches, Func<T, TU> processItems, int maxDegreeOfParallelism = 7)
-        //{
-        //    Parallel.ForEach(
-        //        searches,
-        //        new ParallelOptions { MaxDegreeOfParallelism = maxDegreeOfParallelism },
-        //        async item => {
-        //            await Task.WhenAll(
-        //                Task.Delay(1000),
-        //                Task.Run(() => { processItems(item); })
-        //            );
-        //        }
-        //    );
-        //}
+        /// <summary>
+        /// https://stackoverflow.com/a/35494197
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <typeparam name="TU"></typeparam>
+        /// <param name="searches"></param>
+        /// <param name="processItems"></param>
+        /// <param name="maxDegreeOfParallelism"></param>
+        public static void RateLimit<T, TU>(List<T> searches, Func<T, TU> processItems, int maxDegreeOfParallelism = 9)
+        {
+            Parallel.ForEach(
+                searches,
+                new ParallelOptions { MaxDegreeOfParallelism = maxDegreeOfParallelism },
+                async item =>
+                {
+                    await Task.WhenAll(
+                        Task.Delay(1000),
+                        Task.Run(() => { processItems(item); })
+                    );
+                }
+            );
+        }
     }
 }

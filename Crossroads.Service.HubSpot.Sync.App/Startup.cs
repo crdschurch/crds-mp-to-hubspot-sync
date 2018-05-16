@@ -104,7 +104,7 @@ namespace Crossroads.Service.HubSpot.Sync.App
         {
             // Hackery for setting the application's base path for impending log files
             log4net.GlobalContext.Properties["AppLogRoot"] = Configuration["APP_LOG_ROOT"];
-            loggerFactory.AddLog4Net("log4net.config"); // defaults to this in root -- being explicit for the sake of explicit transparency/clarity
+            loggerFactory.AddLog4Net("log4net.config"); // defaults to this in root -- being explicit for the sake of transparency/clarity
 
             app.UseCors(builder => builder
                 .AllowAnyOrigin()

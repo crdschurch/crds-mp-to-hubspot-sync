@@ -19,7 +19,4 @@
     <ProjectReference Include="..\Crossroads.Service.HubSpot.Sync.ApplicationServices\Crossroads.Service.HubSpot.Sync.ApplicationServices.csproj" />
     <ProjectReference Include="..\Crossroads.Service.HubSpot.Sync.Core\Crossroads.Service.HubSpot.Sync.Core.csproj" />
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Services\" />
-  </ItemGroup>
 </Project>

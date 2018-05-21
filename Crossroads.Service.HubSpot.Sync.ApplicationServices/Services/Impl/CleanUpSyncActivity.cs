@@ -6,6 +6,7 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
     {
         public void CleanUp(ISyncActivity activity)
         {
+            if (activity == null) return;
             RemoveContactsFromFailures(activity);
         }
 

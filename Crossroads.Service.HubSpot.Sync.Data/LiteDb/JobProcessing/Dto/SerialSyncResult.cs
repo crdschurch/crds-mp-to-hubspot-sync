@@ -4,7 +4,7 @@ using Crossroads.Service.HubSpot.Sync.Data.HubSpot.Models.Request;
 
 namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto
 {
-    public class SerialSyncResult
+    public class SerialSyncResult : ISyncResult
     {
         public SerialSyncResult()
         {

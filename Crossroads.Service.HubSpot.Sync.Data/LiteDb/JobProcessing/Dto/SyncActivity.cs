@@ -13,9 +13,8 @@ namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto
             ChildAgeAndGradeUpdateOperation = new SyncActivityChildAgeAndGradeUpdateOperation();
         }
 
-        public SyncActivity(Guid syncActivityId, DateTime executionStartTime)
+        public SyncActivity(DateTime executionStartTime)
         {
-            SyncActivityId = syncActivityId;
             Execution = new ExecutionTime(executionStartTime);
             Id = $"{nameof(SyncActivity)}_{Execution.StartUtc:u}"; // ISO8601: universal/sortable
             NewRegistrationOperation = new SyncActivityNewRegistrationOperation();
@@ -27,8 +26,6 @@ namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto
         public string Id { get; set; }
 
         public DateTime LastUpdated { get; set; }
-
-        public Guid SyncActivityId { get; set; }
 
         public IExecutionTime Execution { get; set; }
 

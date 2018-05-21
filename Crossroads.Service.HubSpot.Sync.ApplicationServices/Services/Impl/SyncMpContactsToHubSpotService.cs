@@ -3,7 +3,6 @@ using Crossroads.Service.HubSpot.Sync.ApplicationServices.Validation;
 using Crossroads.Service.HubSpot.Sync.Core.Logging;
 using Crossroads.Service.HubSpot.Sync.Core.Time;
 using Crossroads.Service.HubSpot.Sync.Core.Utilities;
-using Crossroads.Service.HubSpot.Sync.Core.Utilities.Guid;
 using Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing;
 using Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto;
 using Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Enum;
@@ -25,7 +24,6 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
         private readonly IJobRepository _jobRepository;
         private readonly IPrepareDataForHubSpot _dataPrep;
         private readonly IValidator<ISyncActivity> _syncActivityValidator;
-        private readonly IGenerateCombGuid _combGuidGenerator;
         private readonly ICleanUpSyncActivity _syncActivityCleaner;
         private readonly ILogger<SyncMpContactsToHubSpotService> _logger;
 
@@ -37,7 +35,6 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
             IJobRepository jobRepository,
             IPrepareDataForHubSpot dataPrep,
             IValidator<ISyncActivity> syncActivityValidator,
-            IGenerateCombGuid combGuidGenerator,
             ICleanUpSyncActivity syncActivityCleaner,
             ILogger<SyncMpContactsToHubSpotService> logger)
         {
@@ -48,14 +45,13 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
             _jobRepository = jobRepository ?? throw new ArgumentNullException(nameof(jobRepository));
             _dataPrep = dataPrep ?? throw new ArgumentNullException(nameof(dataPrep));
             _syncActivityValidator = syncActivityValidator ?? throw new ArgumentNullException(nameof(syncActivityValidator));
-            _combGuidGenerator = combGuidGenerator ?? throw new ArgumentNullException(nameof(combGuidGenerator));
             _syncActivityCleaner = syncActivityCleaner ?? throw new ArgumentNullException(nameof(syncActivityCleaner));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public async Task Sync()
+        public async Task<ISyncActivity> Sync()
         {
-            ISyncActivity syncJob = new SyncActivity(_combGuidGenerator.Generate(), _clock.UtcNow);
+            ISyncActivity syncJob = new SyncActivity(_clock.UtcNow);
             var syncState = default(SyncProcessingState);
 
             _logger.LogInformation("Starting MP to HubSpot one-way sync operations (create new registrations first, followed by 2 update operations).");
@@ -65,7 +61,7 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
                 if (syncState == SyncProcessingState.Processing)
                 {
                     _logger.LogWarning("Job is already currently processing.");
-                    return;
+                    return syncJob;
                 }
 
                 // set job processing state; get last successful sync dates
@@ -78,8 +74,8 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
                     syncDates.AgeAndGradeProcessDate = ageGradeDeltaLog.ProcessedUtc;
                     syncDates.AgeAndGradeSyncDate = ageGradeDeltaLog.SyncCompletedUtc ?? default(DateTime); // go ahead and set in case there's nothing to do
                     _jobRepository.SetLastSuccessfulSyncDates(syncDates);
-                });
-
+                }, () => _logger.LogWarning("Age/grade calculation and persistence operation aborted."));
+                
                 Util.TryCatchSwallow(() => { // create contacts
                     syncJob.NewRegistrationOperation = Create(syncJob.PreviousSyncDates.RegistrationSyncDate);
                     if (_syncActivityValidator.Validate(syncJob, ruleSet: RuleSetName.Registration).IsValid)
@@ -87,7 +83,7 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
                         syncDates.RegistrationSyncDate = syncJob.NewRegistrationOperation.Execution.StartUtc;
                         _jobRepository.SetLastSuccessfulSyncDates(syncDates);
                     }
-                });
+                }, () => _logger.LogWarning("Sync new registrations operation aborted."));
 
                 Util.TryCatchSwallow(() => { // update core contact properties
                     syncJob.CoreUpdateOperation = Update(syncJob.PreviousSyncDates.CoreUpdateSyncDate);
@@ -96,7 +92,7 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
                         syncDates.CoreUpdateSyncDate = syncJob.CoreUpdateOperation.Execution.StartUtc;
                         _jobRepository.SetLastSuccessfulSyncDates(syncDates);
                     }
-                });
+                }, () => _logger.LogWarning("Sync core updates operation aborted."));
 
                 // sync age and grade data to hubspot contacts
                 syncJob.ChildAgeAndGradeUpdateOperation = UpdateChildAgeAndGradeData(ageGradeDeltaLog, syncJob.PreviousSyncDates.AgeAndGradeSyncDate);
@@ -108,6 +104,7 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
 
                 // reset sync job processing state
                 syncState = _jobRepository.SetSyncJobProcessingState(SyncProcessingState.Idle);
+                return syncJob;
             }
             catch (Exception exc)
             {

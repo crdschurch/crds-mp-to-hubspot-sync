@@ -19,11 +19,13 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
 
         public BulkContact[] Prep(IList<NewlyRegisteredMpContactDto> newContacts)
         {
+            if(newContacts == null || newContacts.Count == decimal.Zero) return new BulkContact[0];
             return _mapper.Map<BulkContact[]>(newContacts);
         }
 
         public SerialContact[] Prep(IDictionary<string, List<CoreUpdateMpContactDto>> contactUpdates)
         {
+            if(contactUpdates == null || contactUpdates.Count == decimal.Zero) return new SerialContact[0];
             var contacts = new List<SerialContact>();
 
             foreach (var contactKeyValue in contactUpdates)
@@ -46,16 +48,19 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
 
         public BulkContact[] Prep(IList<AgeAndGradeGroupCountsForMpContactDto> mpContacts)
         {
+            if(mpContacts == null || mpContacts.Count == decimal.Zero) return new BulkContact[0];
             return _mapper.Map<List<BulkContact>>(mpContacts).ToArray();
         }
 
         public BulkContact[] ToBulk(List<BulkSyncFailure> failedBatches)
         {
+            if(failedBatches == null || failedBatches.Count == decimal.Zero) return new BulkContact[0];
             return failedBatches.SelectMany(batch => batch.Contacts).ToArray();
         }
 
         public SerialContact[] ToSerial(List<BulkSyncFailure> failedBatches)
         {
+            if (failedBatches == null || failedBatches.Count == decimal.Zero) return new SerialContact[0];
             return _mapper.Map<SerialContact[]>(failedBatches.SelectMany(batch => batch.Contacts));
         }
     }

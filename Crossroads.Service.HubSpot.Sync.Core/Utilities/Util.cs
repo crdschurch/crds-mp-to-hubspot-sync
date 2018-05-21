@@ -36,32 +36,34 @@ namespace Crossroads.Service.HubSpot.Sync.Core.Utilities
         /// preclude subsequent processing. Any logging should have been done higher up in the
         /// stack.
         /// </summary>
-        public static void TryCatchSwallow(Action methodToMuzzle)
+        public static void TryCatchSwallow(Action methodToMuzzle, Action catchMethod = null, Action finallyMethod = null)
         {
-            try { methodToMuzzle(); } catch { /* logging has already happened; suppressing so core update process can run */ }
+            try { methodToMuzzle(); } catch { catchMethod?.Invoke(); } finally { finallyMethod?.Invoke(); }
         }
 
+        /*
         /// <summary>
         /// https://stackoverflow.com/a/35494197
         /// </summary>
         /// <typeparam name="T"></typeparam>
-        /// <typeparam name="TU"></typeparam>
-        /// <param name="searches"></param>
+        /// <param name="itemsToTraverse"></param>
         /// <param name="processItems"></param>
         /// <param name="maxDegreeOfParallelism"></param>
-        public static void RateLimit<T, TU>(List<T> searches, Func<T, TU> processItems, int maxDegreeOfParallelism = 9)
+        public static void RateLimit<T>(int maxDegreeOfParallelism, List<T> itemsToTraverse, Action<T> processItems)
         {
             Parallel.ForEach(
-                searches,
+                itemsToTraverse,
                 new ParallelOptions { MaxDegreeOfParallelism = maxDegreeOfParallelism },
                 async item =>
                 {
                     await Task.WhenAll(
                         Task.Delay(1000),
-                        Task.Run(() => { processItems(item); })
+                        Task.Run(() =>  processItems(item))
                     );
-                }
-            );
+                });
+
+            //Parallel.For(0, )
         }
+		*/
     }
 }

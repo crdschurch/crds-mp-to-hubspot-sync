@@ -4,12 +4,10 @@ using Crossroads.Service.HubSpot.Sync.Core.Utilities;
 using Crossroads.Service.HubSpot.Sync.Data.HubSpot.Models.Request;
 using Crossroads.Service.HubSpot.Sync.Data.HubSpot.Models.Response;
 using Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto;
-using Crossroads.Web.Common.Extensions;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Linq;
 using System.Net;
-using System.Net.Http;
 
 namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
 {
@@ -54,11 +52,6 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
                 {
                     var contactBatch = contacts.Skip(currentBatchNumber * batchSize).Take(batchSize).ToArray();
                     var response = _http.Post($"contacts/v1/contact/batch?hapikey={_hubSpotApiKey}", contactBatch);
-                    if (response == null)
-                    {
-                        run.FailureCount += contactBatch.Length;
-                        continue;
-                    }
 
                     switch (response.StatusCode)
                     {
@@ -73,7 +66,7 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
                                 Count = contactBatch.Length,
                                 BatchNumber = currentBatchNumber + 1,
                                 HttpStatusCode = response.StatusCode,
-                                Exception = GetContent<HubSpotException>(response),
+                                Exception = _http.GetResponseContent<HubSpotException>(response),
                                 Contacts = contactBatch
                             });
 
@@ -85,7 +78,7 @@ More details will be available in the serial processing logs.");
                             break;
                     }
 
-                    PumpTheBreaksEvery7RequestsToAvoid429Exceptions(currentBatchNumber);
+                    PumpTheBreaksEvery7RequestsToAvoid429Exceptions(currentBatchNumber + 1);
                 }
 
                 return run;
@@ -108,17 +101,12 @@ More details will be available in the serial processing logs.");
                 {
                     var contact = contacts[currentContactIndex];
                     var response = _http.Post($"contacts/v1/contact/createOrUpdate/email/{contact.Email}/?hapikey={_hubSpotApiKey}", contact);
-                    if (response == null)
-                    {
-                        run.FailureCount++;
-                        continue;
-                    }
 
                     switch (response.StatusCode)
                     {
                         case HttpStatusCode.OK: // deemed successful by HubSpot
                             _logger.LogDebug($"OK: contact {currentContactIndex + 1} of {contacts.Length}");
-                            SetSuccessCounts(run, GetContent<HubSpotSerialResult>(response));
+                            SetSuccessCounts(run, _http.GetResponseContent<HubSpotSerialResult>(response));
                             break;
                         case HttpStatusCode.Conflict: // already exists -- when a contact attempts to update their email address to one already claimed
                             contact.Email = contact.Properties.First(p => p.Property == "email").Value; // reset email to the existing one and re-run it
@@ -130,7 +118,7 @@ More details will be available in the serial processing logs.");
                             var failure = new SerialSyncFailure
                             {
                                 HttpStatusCode = response.StatusCode,
-                                Exception = GetContent<HubSpotException>(response),
+                                Exception = _http.GetResponseContent<HubSpotException>(response),
                                 Contact = contact
                             };
                             run.Failures.Add(failure);
@@ -138,7 +126,7 @@ More details will be available in the serial processing logs.");
                             break;
                     }
 
-                    PumpTheBreaksEvery7RequestsToAvoid429Exceptions(currentContactIndex);
+                    PumpTheBreaksEvery7RequestsToAvoid429Exceptions(currentContactIndex + 1);
                 }
 
                 return run;
@@ -163,22 +151,6 @@ More details will be available in the serial processing logs.");
                 _logger.LogDebug("Avoiding HTTP 429 start...");
                 _sleeper.Sleep(1000);
                 _logger.LogDebug("Avoiding HTTP 429 end.");
-            }
-        }
-
-        /// <summary>
-        /// Wraps getting content stream in a try catch just in case something goes awry.
-        /// </summary>
-        private T GetContent<T>(HttpResponseMessage response)
-        {
-            try
-            {
-                return response.GetContent<T>();
-            }
-            catch (Exception exc)
-            {
-                _logger.LogError(exc, "Exception occurred while getting content stream.");
-                return default(T);
             }
         }
 

@@ -13,6 +13,6 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services
         /// <summary>
         /// Syncs newly registered Ministry Platform contacts to HubSpot.
         /// </summary>
-        Task Sync();
+        Task<ISyncActivity> Sync();
     }
 }

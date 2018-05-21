@@ -11,8 +11,11 @@ as
                         Contacts.Last_Name as Lastname,
                         dp_Users.[User_Name] as Email, -- switched to dp_Users.User_Name based on dbo.crds_service_update_email_nightly
                         isnull(Congregations.Congregation_Name, '') as Community,
-                        isnull(Marital_Statuses.Marital_Status, '') as MaritalStatus,
-                        isnull(Genders.Gender, '') as Gender
+                        isnull(Marital_Statuses.Marital_Status, '') as Marital_Status,
+                        isnull(Genders.Gender, '') as Gender,
+                        isnull(HouseHolds.Home_Phone, '') as Phone,         -- HS internal id (lower case)
+                        isnull(Contacts.Mobile_Phone, '') as MobilePhone,   -- HS internal id (lower case)
+                        isnull(Addresses.Postal_Code, '') as Zip            -- HS internal id (lower case)
 
     from                dbo.Contacts
     join                dbo.Participants on Contacts.Contact_ID = Participants.Contact_ID
@@ -21,6 +24,9 @@ as
     left join           dbo.Congregations on Congregations.Congregation_ID = Households.Congregation_ID
     left join           dbo.Marital_Statuses on Marital_Statuses.Marital_Status_ID = Contacts.Marital_Status_ID
     left join           dbo.Genders on Genders.Gender_ID = Contacts.Gender_ID
+    left join           dbo.Addresses on Addresses.Address_ID = Households.Address_ID
+
+    --                  Active, registered contacts over 12 years old (if we have an age) whose dbo.Contacts.Email_Address hasn't been blanked out
     where               (Contacts.__Age > 12 or Contacts.__Age is null)
     and                 Contacts.Email_Address is not null
     and                 Contacts.Email_Address <> ''

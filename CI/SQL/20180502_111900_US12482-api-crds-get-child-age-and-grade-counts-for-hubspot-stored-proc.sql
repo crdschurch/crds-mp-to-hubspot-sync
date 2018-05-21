@@ -37,7 +37,7 @@ as
     join            dbo.Contacts on Contacts.Household_ID = KidsClubStudentMinistryCounts.HouseholdId
     join            dbo.dp_Users on dp_Users.Contact_ID = Contacts.Contact_ID
 
-    --              Active, registered contacts over 12 years old (if we have an age) whose email address hasn't been blanked out
+    --              Active, registered contacts over 12 years old (if we have an age) whose dbo.Contacts.Email_Address hasn't been blanked out
     where           (Contacts.__Age > 12 or Contacts.__Age is null)
     and             Contacts.Email_Address is not null
     and             Contacts.Email_Address <> ''

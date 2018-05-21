@@ -11,6 +11,8 @@ create or alter procedure dbo.api_crds_get_mp_contact_updates_for_hubspot
     @LastSuccessfulSyncDateUtc datetime
 as
 
+    -- each common table expression query definition's audit log data is grouped by the Ministry Platform database table of origin:
+    -- dp_Users, Contacts, Households and Addresses
     with UserAuditLog as (
         select          MostRecentFieldChanges.UserId,
                         'email' as PropertyName, -- the value of the "PropertyName" column corresponds to the "property name" used in HubSpot (passed along in the HS API payload)
@@ -26,7 +28,7 @@ as
 
                             from            dbo.vw_crds_audit_log
                             where           OperationDateTime > @LastSuccessfulSyncDateUtc
-                            and             FieldName in ('User_Name')
+                            and             FieldName = 'User_Name'
                             and             TableName = 'dp_Users'
                             and             AuditDescription like '%Updated'  --This will capture "Updated" and "Mass Updated"
                             group by        RecordId,
@@ -48,6 +50,7 @@ as
                             when 'Last_Name' then 'lastname'
                             when 'Marital_Status_ID' then 'marital_status'
                             when 'Gender_ID' then 'gender'
+                            when 'Mobile_Phone' then 'mobilephone'
                         end as PropertyName, -- the value of the "PropertyName" column corresponds to the "property name" used in HubSpot (passed along in the HS API payload)
                         AuditLog.PreviousValue,
                         AuditLog.NewValue
@@ -61,7 +64,7 @@ as
 
                             from            dbo.vw_crds_audit_log
                             where           OperationDateTime > @LastSuccessfulSyncDateUtc
-                            and             FieldName in ('Nickname', 'Last_Name', 'Marital_Status_ID', 'Gender_ID')
+                            and             FieldName in ('Nickname', 'Last_Name', 'Marital_Status_ID', 'Gender_ID', 'Mobile_Phone')
                             and             TableName = 'Contacts'
                             and             AuditDescription like '%Updated'  --This will capture "Updated" and "Mass Updated"
                             group by        RecordId,
@@ -78,7 +81,10 @@ as
     ),
     HouseholdAuditLog as (
         select          MostRecentFieldChanges.HouseholdId,
-                        'community' as PropertyName,
+                        case MostRecentFieldChanges.FieldName
+                            when 'Congregation_ID' then 'community'
+                            when 'Home_Phone' then 'phone'
+                        end as PropertyName, -- the value of the "PropertyName" column corresponds to the "property name" used in HubSpot (passed along in the HS API payload)
                         AuditLog.PreviousValue,
                         AuditLog.NewValue
 
@@ -91,7 +97,7 @@ as
 
                             from            dbo.vw_crds_audit_log
                             where           OperationDateTime > @LastSuccessfulSyncDateUtc
-                            and             FieldName = 'Congregation_ID'
+                            and             FieldName in ('Congregation_ID', 'Home_Phone')
                             and             TableName = 'Households'
                             and             AuditDescription like '%Updated'  --This will capture "Updated" and "Mass Updated"
                             group by        RecordId,
@@ -106,6 +112,37 @@ as
         and             AuditLog.NewValue <> ''
         and             isnull(AuditLog.PreviousValue, '') <> AuditLog.NewValue
     ),
+    HouseholdAddressAuditLog as (
+        select          Households.Household_ID as HouseholdId,
+                        'zip' as PropertyName, -- the value of the "PropertyName" column corresponds to the "property name" used in HubSpot (passed along in the HS API payload)
+                        AuditLog.PreviousValue,
+                        AuditLog.NewValue
+
+        from            dbo.vw_crds_audit_log AuditLog
+        join            (   -- in the event multiple changes were made to a field between updates, we'll be diligent to grab only the last change
+                            select          RecordId as AddressId,
+                                            FieldName,
+                                            TableName,
+                                            max(OperationDateTime) as Updated
+
+                            from            dbo.vw_crds_audit_log
+                            where           OperationDateTime > @LastSuccessfulSyncDateUtc
+                            and             FieldName = 'Postal_Code'
+                            and             TableName = 'Addresses'
+                            and             AuditDescription like '%Updated'  --This will capture "Updated" and "Mass Updated"
+                            group by        RecordId,
+                                            FieldName,
+                                            TableName
+                        ) MostRecentFieldChanges
+        on              AuditLog.RecordId = MostRecentFieldChanges.AddressId
+        and             AuditLog.OperationDateTime = MostRecentFieldChanges.Updated
+        and             AuditLog.FieldName = MostRecentFieldChanges.FieldName
+        and             AuditLog.TableName = MostRecentFieldChanges.TableName
+        join            dbo.Households on Households.Address_ID = MostRecentFieldChanges.AddressId
+        where           AuditLog.NewValue is not null
+        and             AuditLog.NewValue <> ''
+        and             lower(isnull(AuditLog.PreviousValue, '')) <> lower(AuditLog.NewValue) -- we only want email addresses that have actually changed and case differences do not qualify
+    ),
     RelevantContacts as ( -- contacts of age (if we know their age), with logins (they've registered).
         select          Contacts.Contact_ID as MinistryPlatformContactId,
                         dp_Users.[User_ID] as UserId,
@@ -114,8 +151,11 @@ as
                         Contacts.Nickname as Firstname,
                         Contacts.Last_Name as Lastname,
                         isnull(Congregations.Congregation_Name, '') as Community,
-                        isnull(Marital_Statuses.Marital_Status, '') as MaritalStatus,
-                        isnull(Genders.Gender, '') as Gender
+                        isnull(Marital_Statuses.Marital_Status, '') as Marital_Status,
+                        isnull(Genders.Gender, '') as Gender,
+                        isnull(HouseHolds.Home_Phone, '') as Phone,         -- HS internal id (lower case)
+                        isnull(Contacts.Mobile_Phone, '') as MobilePhone,   -- HS internal id (lower case)
+                        isnull(Addresses.Postal_Code, '') as Zip            -- HS internal id (lower case)
 
         from            dbo.Contacts
         join            dbo.dp_Users on dp_Users.Contact_ID = Contacts.Contact_ID
@@ -123,6 +163,9 @@ as
         left join       dbo.Congregations on Congregations.Congregation_ID = Households.Congregation_ID
         left join       dbo.Marital_Statuses on Marital_Statuses.Marital_Status_ID = Contacts.Marital_Status_ID
         left join       dbo.Genders on Genders.Gender_ID = Contacts.Gender_ID
+        left join       dbo.Addresses on Addresses.Address_ID = Households.Address_ID
+
+        --              Active, registered contacts over 12 years old (if we have an age) whose dbo.Contacts.Email_Address hasn't been blanked out
         where           (Contacts.__Age > 12 or Contacts.__Age is null)
         and             Contacts.Email_Address is not null
         and             Contacts.Email_Address <> ''
@@ -143,8 +186,11 @@ as
                     RelevantContacts.Lastname,
                     RelevantContacts.Email,
                     RelevantContacts.Community,
-                    RelevantContacts.MaritalStatus,
-                    RelevantContacts.Gender
+                    RelevantContacts.Marital_Status,
+                    RelevantContacts.Gender,
+                    RelevantContacts.Phone,
+                    RelevantContacts.MobilePhone,
+                    RelevantContacts.Zip
 
     from            UserAuditLog
     join            RelevantContacts
@@ -161,8 +207,11 @@ as
                     RelevantContacts.Lastname,
                     RelevantContacts.Email,
                     RelevantContacts.Community,
-                    RelevantContacts.MaritalStatus,
-                    RelevantContacts.Gender
+                    RelevantContacts.Marital_Status,
+                    RelevantContacts.Gender,
+                    RelevantContacts.Phone,
+                    RelevantContacts.MobilePhone,
+                    RelevantContacts.Zip
 
     from            ContactAuditLog
     join            RelevantContacts
@@ -179,9 +228,33 @@ as
                     RelevantContacts.Lastname,
                     RelevantContacts.Email,
                     RelevantContacts.Community,
-                    RelevantContacts.MaritalStatus,
-                    RelevantContacts.Gender
+                    RelevantContacts.Marital_Status,
+                    RelevantContacts.Gender,
+                    RelevantContacts.Phone,
+                    RelevantContacts.MobilePhone,
+                    RelevantContacts.Zip
 
     from            HouseholdAuditLog
     join            RelevantContacts
-    on              RelevantContacts.HouseholdId = HouseholdAuditLog.HouseholdId;
+    on              RelevantContacts.HouseholdId = HouseholdAuditLog.HouseholdId
+    
+    union
+
+    --              Household address zip code changed
+    select          RelevantContacts.MinistryPlatformContactId,
+                    HouseholdAddressAuditLog.PropertyName,
+                    HouseholdAddressAuditLog.PreviousValue,
+                    HouseholdAddressAuditLog.NewValue,
+                    RelevantContacts.Firstname,
+                    RelevantContacts.Lastname,
+                    RelevantContacts.Email,
+                    RelevantContacts.Community,
+                    RelevantContacts.Marital_Status,
+                    RelevantContacts.Gender,
+                    RelevantContacts.Phone,
+                    RelevantContacts.MobilePhone,
+                    RelevantContacts.Zip
+
+    from            HouseholdAddressAuditLog
+    join            RelevantContacts
+    on              RelevantContacts.HouseholdId = HouseholdAddressAuditLog.HouseholdId;

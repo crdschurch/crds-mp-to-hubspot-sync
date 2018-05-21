@@ -28,14 +28,14 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.AutoMapper
             // when an updated contact's email address changed from one value to another
             CreateMap<List<CoreUpdateMpContactDto>, EmailAddressChangedContact>()
                 .ForMember(emailChanged => emailChanged.Email, memberOptions => memberOptions.MapFrom(updates => updates.First(update => update.PropertyName == "email").PreviousValue))
-                .ForMember(emailChanged => emailChanged.Properties, memberOptions => memberOptions.MapFrom(updates => ToProperties(updates)))
+                .ForMember(emailChanged => emailChanged.Properties, memberOptions => memberOptions.MapFrom(updates => ToContactProperties(updates)))
                 .AfterMap((coreProperties, targetContact) => AddCoreAttributesToHubSpotProperties(coreProperties.First(), targetContact))
                 .AfterMap((updates, targetContact) => AddTangentialAttributesToHubSpotProperties(updates.First(), targetContact, environment));
 
             // when non-email updates have occurred
             CreateMap<List<CoreUpdateMpContactDto>, NonEmailAttributesChangedContact>()
                 .ForMember(nonEmailChanges => nonEmailChanges.Email, memberOptions => memberOptions.MapFrom(updates => updates.First().Email))
-                .ForMember(nonEmailChanges => nonEmailChanges.Properties, memberOptions => memberOptions.MapFrom(updates => ToProperties(updates)))
+                .ForMember(nonEmailChanges => nonEmailChanges.Properties, memberOptions => memberOptions.MapFrom(updates => ToContactProperties(updates)))
                 .AfterMap((coreProperties, targetContact) => AddCoreAttributesToHubSpotProperties(coreProperties.First(), targetContact))
                 .AfterMap((tangentialProperties, targetContact) => AddTangentialAttributesToHubSpotProperties(tangentialProperties.First(), targetContact, environment));
 
@@ -44,8 +44,8 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.AutoMapper
             // ...THEY JUST WON'T HAVE FIRSTNAME, LASTNAME, COMMUNITY, ETC UNTIL ONE OF THE OTHER 2 PROCESSES PICKS THEM UP
             // when Kids Club and Student Ministry age/grade data changes
             CreateMap<AgeAndGradeGroupCountsForMpContactDto, BulkContact>()
-                .ForMember(contact => contact.Email, memberOptions => memberOptions.MapFrom(updates => updates.Email))
-                .ForMember(contact => contact.Properties, memberOptions => memberOptions.MapFrom(updates => ToProperties(updates)))
+                .ForMember(contact => contact.Email, memberOptions => memberOptions.MapFrom(ageGradeUpdates => ageGradeUpdates.Email))
+                .ForMember(contact => contact.Properties, memberOptions => memberOptions.MapFrom(ageGradeUpdates => ReflectToContactProperties(ageGradeUpdates)))
                 .AfterMap((tangentialProperties, targetContact) => AddTangentialAttributesToHubSpotProperties(tangentialProperties, targetContact, environment));
         }
 
@@ -95,39 +95,10 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.AutoMapper
         private static void AddCoreAttributesToHubSpotProperties(ICoreContactProperties coreContactProperties, IContact targetContact)
         {
             // *Attempt* to add all the core properties for create/update operation (the HashSet will keep the data clean/unique)
-            targetContact.Properties = new HashSet<ContactProperty>(targetContact.Properties ?? Enumerable.Empty<ContactProperty>())
-            {
-                new ContactProperty
-                {
-                    Property = "email",
-                    Value = coreContactProperties.Email
-                },
-                new ContactProperty
-                {
-                    Property = "firstname",
-                    Value = coreContactProperties.Firstname
-                },
-                new ContactProperty
-                {
-                    Property = "lastname",
-                    Value = coreContactProperties.Lastname
-                },
-                new ContactProperty
-                {
-                    Property = "marital_status",
-                    Value = coreContactProperties.MaritalStatus
-                },
-                new ContactProperty
-                {
-                    Property = "gender",
-                    Value = coreContactProperties.Gender
-                },
-                new ContactProperty
-                {
-                    Property = "community",
-                    Value = coreContactProperties.Community
-                }
-            }.ToList();
+            var preExistingCoreProperties = new HashSet<ContactProperty>(targetContact.Properties ?? Enumerable.Empty<ContactProperty>());
+            preExistingCoreProperties.UnionWith(ReflectToContactProperties(coreContactProperties));
+
+            targetContact.Properties = preExistingCoreProperties.ToList();
         }
 
         /// <summary>
@@ -136,7 +107,7 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.AutoMapper
         /// <param name="contactUpdates">
         /// Individual audit log records of change for a given contact. Equates to 1 log per field change.
         /// </param>
-        private ISet<ContactProperty> ToProperties(List<CoreUpdateMpContactDto> contactUpdates)
+        private ISet<ContactProperty> ToContactProperties(List<CoreUpdateMpContactDto> contactUpdates)
         {
             return new HashSet<ContactProperty>(contactUpdates.Select(update => new ContactProperty
             {
@@ -147,117 +118,19 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.AutoMapper
         }
 
         /// <summary>
-        /// Projects Kids Club and Student Ministry updates originating from the MP age & grade deltas to HubSpot contact properties.
+        /// Reflects over the specified argument to convert its defined object properties to an ISet collection of
+        /// type <see cref="ContactProperty"/>. Goal is to sacrifice a mite of readability (hard decision to make)
+        /// for the sake of simplifying future updates; should we need to add any new properties to the contact,
+        /// this will account for any additions where mapping to HubSpot models is concerned.
         /// </summary>
-        /// <param name="contactAgeGradeUpdates">
-        /// Age/grade data
-        /// </param>
-        private ISet<ContactProperty> ToProperties(AgeAndGradeGroupCountsForMpContactDto contactAgeGradeUpdates)
+        private static ISet<ContactProperty> ReflectToContactProperties<T>(T instanceToConvert)
         {
-            return new HashSet<ContactProperty>
-            {
-                // all age and grade data from here down
+            return new HashSet<ContactProperty>(instanceToConvert.GetType().GetInterfaces().SelectMany(i => i.GetProperties().Select(prop =>
                 new ContactProperty
                 {
-                    Property = nameof(contactAgeGradeUpdates.Number_of_Infants).ToLowerInvariant(),
-                    Value = contactAgeGradeUpdates.Number_of_Infants.ToString()
-                },
-                new ContactProperty
-                {
-                    Property = nameof(contactAgeGradeUpdates.Number_of_1_Year_Olds).ToLowerInvariant(),
-                    Value = contactAgeGradeUpdates.Number_of_1_Year_Olds.ToString()
-                },
-                new ContactProperty
-                {
-                    Property = nameof(contactAgeGradeUpdates.Number_of_2_Year_Olds).ToLowerInvariant(),
-                    Value = contactAgeGradeUpdates.Number_of_2_Year_Olds.ToString()
-                },
-                new ContactProperty
-                {
-                    Property = nameof(contactAgeGradeUpdates.Number_of_3_Year_Olds).ToLowerInvariant(),
-                    Value = contactAgeGradeUpdates.Number_of_3_Year_Olds.ToString()
-                },
-                new ContactProperty
-                {
-                    Property = nameof(contactAgeGradeUpdates.Number_of_4_Year_Olds).ToLowerInvariant(),
-                    Value = contactAgeGradeUpdates.Number_of_4_Year_Olds.ToString()
-                },
-                new ContactProperty
-                {
-                    Property = nameof(contactAgeGradeUpdates.Number_of_5_Year_Olds).ToLowerInvariant(),
-                    Value = contactAgeGradeUpdates.Number_of_5_Year_Olds.ToString()
-                },
-                new ContactProperty
-                {
-                    Property = nameof(contactAgeGradeUpdates.Number_of_Kindergartners).ToLowerInvariant(),
-                    Value = contactAgeGradeUpdates.Number_of_Kindergartners.ToString()
-                },
-                new ContactProperty
-                {
-                    Property = nameof(contactAgeGradeUpdates.Number_of_1st_Graders).ToLowerInvariant(),
-                    Value = contactAgeGradeUpdates.Number_of_1st_Graders.ToString()
-                },
-                new ContactProperty
-                {
-                    Property = nameof(contactAgeGradeUpdates.Number_of_2nd_Graders).ToLowerInvariant(),
-                    Value = contactAgeGradeUpdates.Number_of_2nd_Graders.ToString()
-                },
-                new ContactProperty
-                {
-                    Property = nameof(contactAgeGradeUpdates.Number_of_3rd_Graders).ToLowerInvariant(),
-                    Value = contactAgeGradeUpdates.Number_of_3rd_Graders.ToString()
-                },
-                new ContactProperty
-                {
-                    Property = nameof(contactAgeGradeUpdates.Number_of_4th_Graders).ToLowerInvariant(),
-                    Value = contactAgeGradeUpdates.Number_of_4th_Graders.ToString()
-                },
-                new ContactProperty
-                {
-                    Property = nameof(contactAgeGradeUpdates.Number_of_5th_Graders).ToLowerInvariant(),
-                    Value = contactAgeGradeUpdates.Number_of_5th_Graders.ToString()
-                },
-                new ContactProperty
-                {
-                    Property = nameof(contactAgeGradeUpdates.Number_of_6th_Graders).ToLowerInvariant(),
-                    Value = contactAgeGradeUpdates.Number_of_6th_Graders.ToString()
-                },
-                new ContactProperty
-                {
-                    Property = nameof(contactAgeGradeUpdates.Number_of_7th_Graders).ToLowerInvariant(),
-                    Value = contactAgeGradeUpdates.Number_of_7th_Graders.ToString()
-                },
-                new ContactProperty
-                {
-                    Property = nameof(contactAgeGradeUpdates.Number_of_8th_Graders).ToLowerInvariant(),
-                    Value = contactAgeGradeUpdates.Number_of_8th_Graders.ToString()
-                },
-                new ContactProperty
-                {
-                    Property = nameof(contactAgeGradeUpdates.Number_of_9th_Graders).ToLowerInvariant(),
-                    Value = contactAgeGradeUpdates.Number_of_9th_Graders.ToString()
-                },
-                new ContactProperty
-                {
-                    Property = nameof(contactAgeGradeUpdates.Number_of_10th_Graders).ToLowerInvariant(),
-                    Value = contactAgeGradeUpdates.Number_of_10th_Graders.ToString()
-                },
-                new ContactProperty
-                {
-                    Property = nameof(contactAgeGradeUpdates.Number_of_11th_Graders).ToLowerInvariant(),
-                    Value = contactAgeGradeUpdates.Number_of_11th_Graders.ToString()
-                },
-                new ContactProperty
-                {
-                    Property = nameof(contactAgeGradeUpdates.Number_of_12th_Graders).ToLowerInvariant(),
-                    Value = contactAgeGradeUpdates.Number_of_12th_Graders.ToString()
-                },
-                new ContactProperty
-                {
-                    Property = nameof(contactAgeGradeUpdates.Number_of_Graduated_Seniors).ToLowerInvariant(),
-                    Value = contactAgeGradeUpdates.Number_of_Graduated_Seniors.ToString()
-                }
-            };
+                    Property = prop.Name.ToLowerInvariant(),
+                    Value = prop.GetValue(instanceToConvert)?.ToString() ?? string.Empty
+                })));
         }
     }
 }

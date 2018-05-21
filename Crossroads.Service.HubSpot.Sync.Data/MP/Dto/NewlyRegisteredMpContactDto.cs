@@ -1,6 +1,10 @@
 ﻿
 namespace Crossroads.Service.HubSpot.Sync.Data.MP.Dto
 {
+    /// <summary>
+    /// <see cref="ICoreContactProperties"/> PROPERTY NAMES MUST MATCH THE COLUMNS NAMES IN
+    /// dbo.api_crds_get_newly_registered_mp_contacts_for_hubspot.
+    /// </summary>
     public class NewlyRegisteredMpContactDto : IDeveloperIntegrationProperties, ICoreContactProperties
     {
         public string MinistryPlatformContactId { get; set; }
@@ -37,9 +41,15 @@ namespace Crossroads.Service.HubSpot.Sync.Data.MP.Dto
         /// as lists containing finite values. 'Unspecified' is NOT visible to
         /// consumers of the Marital Status field (on a form, etc).
         /// </summary>
-        public string MaritalStatus { get; set; }
+        public string Marital_Status { get; set; }
 
         public string Gender { get; set; }
+
+        public string Phone { get; set; }
+
+        public string MobilePhone { get; set; }
+
+        public string Zip { get; set; }
 
         public string Source => "MP_Registration";
     }

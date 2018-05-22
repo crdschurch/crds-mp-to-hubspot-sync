@@ -20,6 +20,9 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services
     /// 3) Community
     /// 4) Marital status
     /// 5) Gender
+    /// 6) Home Phone
+    /// 7) Mobile Phone
+    /// 8) Postal/Zip Code
     /// </summary>
     public interface IPrepareDataForHubSpot
     {

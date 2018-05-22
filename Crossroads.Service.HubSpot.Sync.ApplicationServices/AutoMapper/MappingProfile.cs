@@ -19,7 +19,7 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.AutoMapper
             CreateMap<NewlyRegisteredMpContactDto, BulkContact>()
                 .ForMember(hubSpotContact => hubSpotContact.Email, memberOptions => memberOptions.MapFrom(dto => dto.Email))
                 .AfterMap(AddCoreAttributesToHubSpotProperties)
-                .AfterMap((updates, targetContact) => AddTangentialAttributesToHubSpotProperties(updates, targetContact, environment));
+                .AfterMap((updates, targetContact) => AddTangentialAttributesToHubSpotProperties(targetContact, environment));
 
             // HubSpot bulk contact to HubSpot serial contact
             // HubSpot structures contact properties slightly differently for bulk (create or update) and serial create endpoints
@@ -31,14 +31,14 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.AutoMapper
                 .ForMember(emailChanged => emailChanged.Email, memberOptions => memberOptions.MapFrom(updates => updates.First(update => update.PropertyName == "email").PreviousValue))
                 .ForMember(emailChanged => emailChanged.Properties, memberOptions => memberOptions.MapFrom(updates => ToContactProperties(updates)))
                 .AfterMap((coreProperties, targetContact) => AddCoreAttributesToHubSpotProperties(coreProperties.First(), targetContact))
-                .AfterMap((updates, targetContact) => AddTangentialAttributesToHubSpotProperties(updates.First(), targetContact, environment));
+                .AfterMap((updates, targetContact) => AddTangentialAttributesToHubSpotProperties(targetContact, environment));
 
             // when non-email updates have occurred
             CreateMap<List<CoreUpdateMpContactDto>, NonEmailAttributesChangedContact>()
                 .ForMember(nonEmailChanges => nonEmailChanges.Email, memberOptions => memberOptions.MapFrom(updates => updates.First().Email))
                 .ForMember(nonEmailChanges => nonEmailChanges.Properties, memberOptions => memberOptions.MapFrom(updates => ToContactProperties(updates)))
                 .AfterMap((coreProperties, targetContact) => AddCoreAttributesToHubSpotProperties(coreProperties.First(), targetContact))
-                .AfterMap((tangentialProperties, targetContact) => AddTangentialAttributesToHubSpotProperties(tangentialProperties.First(), targetContact, environment));
+                .AfterMap((tangentialProperties, targetContact) => AddTangentialAttributesToHubSpotProperties(targetContact, environment));
 
             // WE KIND OF TREAT THIS AS AN UPDATE-ONLY SCENARIO B/C WE DON'T INCLUDE CORE PROPERTIES (MAYBE WE SHOULD FOR SAFETY?)
             // BUT TECHNICALLY THIS SHOULD BE PICKED UP BY THE NEW REGISTRATION OR CORE UPDATE PROCESSES. WILL STILL CREATE THE CONTACT...
@@ -47,32 +47,21 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.AutoMapper
             CreateMap<AgeAndGradeGroupCountsForMpContactDto, BulkContact>()
                 .ForMember(contact => contact.Email, memberOptions => memberOptions.MapFrom(ageGradeUpdates => ageGradeUpdates.Email))
                 .ForMember(contact => contact.Properties, memberOptions => memberOptions.MapFrom(ageGradeUpdates => ReflectToContactProperties(ageGradeUpdates)))
-                .AfterMap((tangentialProperties, targetContact) => AddTangentialAttributesToHubSpotProperties(tangentialProperties, targetContact, environment));
+                .AfterMap((tangentialProperties, targetContact) => AddTangentialAttributesToHubSpotProperties(targetContact, environment));
         }
 
         /// <summary>
         /// Ensures the Ministry Platform Contact Id, Source, Environment and lifecycle stage are included in the payload
         /// to be sent to HubSpot alongside each contact.
         /// </summary>
-        /// <param name="devProperties">The developer-specific integration values from MP we want passed to HubSpot.</param>
         /// <param name="targetContact">Contact to which we will assign the integration attributes.</param>
         /// <param name="environmentName">Name of the environment in which the application is executing.</param>
-        private static void AddTangentialAttributesToHubSpotProperties(IDeveloperIntegrationProperties devProperties, IContact targetContact, string environmentName)
+        private static void AddTangentialAttributesToHubSpotProperties(IContact targetContact, string environmentName)
         {
             // preserve existing properties (the HashSet will keep the data clean/unique)
             targetContact.Properties = new HashSet<ContactProperty>(targetContact.Properties ?? Enumerable.Empty<ContactProperty>())
             {
                 // captures reference metadata to pass along when updating HubSpot contact data
-                new ContactProperty
-                {
-                    Property = "MinistryPlatformContactId".ToLowerInvariant(),
-                    Value = devProperties.MinistryPlatformContactId
-                },
-                new ContactProperty
-                {
-                    Property = "source",
-                    Value = devProperties.Source
-                },
                 new ContactProperty
                 {
                     Property = "environment",

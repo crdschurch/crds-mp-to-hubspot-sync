@@ -123,24 +123,11 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.AutoMapper
         /// for the sake of simplifying future updates; should we need to add any new properties to the contact,
         /// this will account for any additions where mapping to HubSpot models is concerned.
         /// </summary>
-        private static ISet<ContactProperty> ReflectToContactProperties(ICoreContactProperties coreContactProperties)
+        private static ISet<ContactProperty> ReflectToContactProperties<T>(T contactProperties)
         {
-            return new HashSet<ContactProperty>(coreContactProperties.GetType()
+            return new HashSet<ContactProperty>(contactProperties.GetType()
                 .GetInterfaces()
-                .SelectMany(i => i.GetProperties().Select(propertyInfo => BuildContactProperty(propertyInfo, coreContactProperties))));
-        }
-
-        /// <summary>
-        /// Reflects over the specified argument to convert its defined object properties to an ISet collection of
-        /// type <see cref="ContactProperty"/>. Goal is to sacrifice a mite of readability (hard decision to make)
-        /// for the sake of simplifying future updates; should we need to add any new properties to the contact,
-        /// this will account for any additions where mapping to HubSpot models is concerned.
-        /// </summary>
-        private static ISet<ContactProperty> ReflectToContactProperties(AgeAndGradeGroupCountsForMpContactDto ageGradeCounts)
-        {
-            return new HashSet<ContactProperty>(ageGradeCounts.GetType()
-                .GetProperties()
-                .Select(propertyInfo => BuildContactProperty(propertyInfo, ageGradeCounts)));
+                .SelectMany(i => i.GetProperties().Select(propertyInfo => BuildContactProperty(propertyInfo, contactProperties))));
         }
 
         private static ContactProperty BuildContactProperty(PropertyInfo property, object obj)

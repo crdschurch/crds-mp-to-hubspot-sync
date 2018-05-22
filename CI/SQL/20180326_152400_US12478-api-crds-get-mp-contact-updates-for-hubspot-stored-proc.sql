@@ -146,7 +146,6 @@ as
     RelevantContacts as ( -- contacts of age (if we know their age), with logins (they've registered).
         select          Contacts.Contact_ID as MinistryPlatformContactId,
                         dp_Users.[User_ID] as UserId,
-                        Households.Household_ID as HouseholdId,
                         dp_Users.[User_Name] as Email,
                         Contacts.Nickname as Firstname,
                         Contacts.Last_Name as Lastname,
@@ -155,15 +154,18 @@ as
                         isnull(Genders.Gender, '') as Gender,
                         isnull(HouseHolds.Home_Phone, '') as Phone,         -- HS internal id (lower case)
                         isnull(Contacts.Mobile_Phone, '') as MobilePhone,   -- HS internal id (lower case)
-                        isnull(Addresses.Postal_Code, '') as Zip            -- HS internal id (lower case)
+                        isnull(Addresses.Postal_Code, '') as Zip,           -- HS internal id (lower case)
+                        KidsClubStudentMinistryCounts.*
 
         from            dbo.Contacts
         join            dbo.dp_Users on dp_Users.Contact_ID = Contacts.Contact_ID
+        join            dbo.Participants on Contacts.Contact_ID = Participants.Contact_ID
         left join       dbo.Households on HouseHolds.Household_ID = Contacts.Household_ID
         left join       dbo.Congregations on Congregations.Congregation_ID = Households.Congregation_ID
         left join       dbo.Marital_Statuses on Marital_Statuses.Marital_Status_ID = Contacts.Marital_Status_ID
         left join       dbo.Genders on Genders.Gender_ID = Contacts.Gender_ID
         left join       dbo.Addresses on Addresses.Address_ID = Households.Address_ID
+        left join       dbo.crds_get_child_age_and_grade_counts() as KidsClubStudentMinistryCounts on KidsClubStudentMinistryCounts.HouseholdId = Households.Household_ID
 
         --              Active, registered contacts over 12 years old (if we have an age) whose dbo.Contacts.Email_Address hasn't been blanked out
         where           (Contacts.__Age > 12 or Contacts.__Age is null)
@@ -178,19 +180,10 @@ as
     )
 
     --              email address legitimately (not casing, etc) changed
-    select          RelevantContacts.MinistryPlatformContactId,
-                    UserAuditLog.PropertyName,
+    select          UserAuditLog.PropertyName,
                     UserAuditLog.PreviousValue,
                     UserAuditLog.NewValue,
-                    RelevantContacts.Firstname,
-                    RelevantContacts.Lastname,
-                    RelevantContacts.Email,
-                    RelevantContacts.Community,
-                    RelevantContacts.Marital_Status,
-                    RelevantContacts.Gender,
-                    RelevantContacts.Phone,
-                    RelevantContacts.MobilePhone,
-                    RelevantContacts.Zip
+                    RelevantContacts.*
 
     from            UserAuditLog
     join            RelevantContacts
@@ -199,19 +192,10 @@ as
     union
 
     --              nick name, last name, marital status, gender changed
-    select          RelevantContacts.MinistryPlatformContactId,
-                    ContactAuditLog.PropertyName,
+    select          ContactAuditLog.PropertyName,
                     ContactAuditLog.PreviousValue,
                     ContactAuditLog.NewValue,
-                    RelevantContacts.Firstname,
-                    RelevantContacts.Lastname,
-                    RelevantContacts.Email,
-                    RelevantContacts.Community,
-                    RelevantContacts.Marital_Status,
-                    RelevantContacts.Gender,
-                    RelevantContacts.Phone,
-                    RelevantContacts.MobilePhone,
-                    RelevantContacts.Zip
+                    RelevantContacts.*
 
     from            ContactAuditLog
     join            RelevantContacts
@@ -220,19 +204,10 @@ as
     union
 
     --              community/congregation changed
-    select          RelevantContacts.MinistryPlatformContactId,
-                    HouseholdAuditLog.PropertyName,
+    select          HouseholdAuditLog.PropertyName,
                     HouseholdAuditLog.PreviousValue,
                     HouseholdAuditLog.NewValue,
-                    RelevantContacts.Firstname,
-                    RelevantContacts.Lastname,
-                    RelevantContacts.Email,
-                    RelevantContacts.Community,
-                    RelevantContacts.Marital_Status,
-                    RelevantContacts.Gender,
-                    RelevantContacts.Phone,
-                    RelevantContacts.MobilePhone,
-                    RelevantContacts.Zip
+                    RelevantContacts.*
 
     from            HouseholdAuditLog
     join            RelevantContacts
@@ -241,19 +216,10 @@ as
     union
 
     --              Household address zip code changed
-    select          RelevantContacts.MinistryPlatformContactId,
-                    HouseholdAddressAuditLog.PropertyName,
+    select          HouseholdAddressAuditLog.PropertyName,
                     HouseholdAddressAuditLog.PreviousValue,
                     HouseholdAddressAuditLog.NewValue,
-                    RelevantContacts.Firstname,
-                    RelevantContacts.Lastname,
-                    RelevantContacts.Email,
-                    RelevantContacts.Community,
-                    RelevantContacts.Marital_Status,
-                    RelevantContacts.Gender,
-                    RelevantContacts.Phone,
-                    RelevantContacts.MobilePhone,
-                    RelevantContacts.Zip
+                    RelevantContacts.*
 
     from            HouseholdAddressAuditLog
     join            RelevantContacts

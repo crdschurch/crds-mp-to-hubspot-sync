@@ -1,9 +1,9 @@
 use MinistryPlatform
 go
 
--- drop procedure dbo.get_most_recent_field_changes;
+-- drop function dbo.crds_get_most_recent_field_changes;
 
-create or alter function dbo.get_most_recent_field_changes(@TableName varchar(50), @AfterThisOperationDateTime datetime)  
+create or alter function dbo.crds_get_most_recent_field_changes(@TableName varchar(50), @AfterThisOperationDateTime datetime)  
 returns table
 as
 return

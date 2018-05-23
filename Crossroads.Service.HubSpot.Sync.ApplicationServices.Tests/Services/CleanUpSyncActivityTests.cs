@@ -13,14 +13,14 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Test.Services
         private readonly CleanUpSyncActivity _fixture = new CleanUpSyncActivity();
 
         [Fact]
-        public void given_a_null_activity_clean_up_should_not_throw_an_exception()
+        public void Given_A_Null_Activity_Clean_Up_Should_Not_Throw_An_Exception()
         {
             Action action = () => _fixture.CleanUp(null);
             action.Should().NotThrow<Exception>();
         }
 
         [Fact]
-        public void given_an_activity_with_contacts_that_failed_to_sync_clean_up_should_null_all_failed_contact()
+        public void Given_An_Activity_With_Contacts_That_Failed_To_Sync_Clean_Up_Should_Null_All_Failed_Contacts()
         {
             var bulkContacts = new List<BulkContact> {new BulkContact {Email = "i@t.co.uk"}, new BulkContact{Email = "y@a.net"}};
             var activity = new SyncActivity();

@@ -41,6 +41,8 @@ namespace Crossroads.Service.HubSpot.Sync.Core.Utilities
             try { methodToMuzzle(); } catch { catchMethod?.Invoke(); } finally { finallyMethod?.Invoke(); }
         }
 
+        // TODO: THE FUTURE PLAN AND PURPOSE OF KEEPING THIS AROUND IS TO ENABLE ASYNC, RATE-LIMITED HTTP REQUESTS.
+        // TODO: (contd) I BELIEVE THE CURRENT, BLOCKING REQUEST CALLS ARE THE BARRIER TO THE APP STACK BEING ASYNC
         /*
         /// <summary>
         /// https://stackoverflow.com/a/35494197

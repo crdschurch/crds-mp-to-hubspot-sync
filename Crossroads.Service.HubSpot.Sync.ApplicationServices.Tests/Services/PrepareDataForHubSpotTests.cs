@@ -22,7 +22,7 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Test.Services
         }
 
         [Fact]
-        public void given_a_contact_with_or_without_an_email_property_the_resulting_type_should_be_emailaddresschangedcontact_or_nonemailattributeschangedcontact()
+        public void Given_A_List_Of_MP_Core_Contact_Updates__HubSpot_Bound_DTOs_Should_Be_Segmented_By_Attributes_Changed_To_Ensure_Successful_Sync()
         {
             var updates = new Dictionary<string, List<CoreUpdateMpContactDto>>
             {

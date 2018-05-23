@@ -26,6 +26,11 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Test.Services
         const string HubSpotApiKey = "apiKey_123456789";
         private readonly Mock<ILogger<CreateOrUpdateContactsInHubSpot>> _loggerMock;
 
+        /// <summary>
+        /// One thousand milliseconds = 1 second
+        /// </summary>
+        private const int OneSecond = 1000;
+
         private readonly BulkContact[] _bulkContacts =
         {
             new BulkContact { Email = "email@1.com", Properties = PopulateProperties()},
@@ -69,7 +74,7 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Test.Services
 
             // default setups
             clockMock.Setup(clock => clock.UtcNow).Returns(_utcNowMockDateTime);
-            _sleeperMock.Setup(s => s.Sleep(1000));
+            _sleeperMock.Setup(s => s.Sleep(OneSecond));
         }
 
         private void SetUpMockDefinitions(HttpStatusCode httpStatusCode, bool isNew = false)
@@ -110,7 +115,7 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Test.Services
             result.Execution.FinishUtc.Should().Be(_utcNowMockDateTime);
 
             // assert behavior
-            _sleeperMock.Verify(sleeper => sleeper.Sleep(1000), Times.Exactly(numberOfRequests > 6 ? 1 : 0));
+            _sleeperMock.Verify(sleeper => sleeper.Sleep(OneSecond), Times.Exactly(numberOfRequests > 6 ? 1 : 0));
         }
 
         [Theory]

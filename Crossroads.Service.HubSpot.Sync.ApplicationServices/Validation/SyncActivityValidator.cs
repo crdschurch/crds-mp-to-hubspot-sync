@@ -3,6 +3,7 @@ using FluentValidation;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using Crossroads.Service.HubSpot.Sync.Data.MP.Dto;
 
 namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Validation
 {
@@ -43,6 +44,27 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Validation
                 RuleFor(activity => activity.CoreUpdateOperation).NotNull();
                 RuleFor(activity => activity.CoreUpdateOperation).Must(NotHaveEncounteredHubSpotIssuesDuringCoreUpdateOperation);
             });
+
+            RuleSet(RuleSetName.AgeGradeUpdate, () =>
+            {
+                RuleFor(activity => activity.ChildAgeAndGradeUpdateOperation).NotNull();
+                RuleFor(activity => activity.ChildAgeAndGradeUpdateOperation).Must(NotHaveEncounteredHubSpotIssuesDuringAgeGradeUpdateOperation);
+                RuleFor(activity => activity.ChildAgeAndGradeUpdateOperation.AgeAndGradeDelta).Must(HaveDeltasInOrderToBotherTryingToPushDataUpToHubSpot);
+            });
+        }
+
+        private bool HaveDeltasInOrderToBotherTryingToPushDataUpToHubSpot(ChildAgeAndGradeDeltaLogDto deltaLog)
+        {
+            return (deltaLog.InsertCount == 0 && deltaLog.UpdateCount == 0) == false;
+        }
+
+        private bool NotHaveEncounteredHubSpotIssuesDuringAgeGradeUpdateOperation(ISyncActivityChildAgeAndGradeUpdateOperation operation)
+        {
+            var failures = operation.BulkUpdateSyncResult100.FailedBatches
+                    .Union<IFailureDetails>(operation.BulkUpdateSyncResult10.FailedBatches)
+                    .Union(operation.RetryBulkUpdateAsSerialUpdateResult.Failures).ToList();
+
+            return HubSpotIssuesEncountered(failures) == false;
         }
 
         /// <summary>
@@ -64,13 +86,7 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Validation
         /// </summary>
         public bool NotHaveEncounteredHubSpotIssuesDuringCoreUpdateOperation(ISyncActivityCoreUpdateOperation operation)
         {
-            var failures =
-                operation.CoreUpdateSyncResult.Failures
-                    .Union<IFailureDetails>(operation.EmailChangedSyncResult.Failures)
-                    .Union(operation.RetryCoreUpdateAsCreateSyncResult.Failures)
-                    .Union(operation.RetryEmailChangeAsCreateSyncResult.Failures)
-                .ToList();
-
+            var failures = operation.SerialUpdateResult.Failures.Union<IFailureDetails>(operation.RetryEmailExistsAsSerialUpdateResult.Failures).ToList();
             return HubSpotIssuesEncountered(failures) == false;
         }
 

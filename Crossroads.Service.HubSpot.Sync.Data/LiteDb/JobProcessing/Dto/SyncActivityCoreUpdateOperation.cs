@@ -1,5 +1,4 @@
 ﻿using System;
-using Crossroads.Service.HubSpot.Sync.Data.HubSpot.Models.Request;
 
 namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto
 {
@@ -11,67 +10,44 @@ namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto
     {
         public SyncActivityCoreUpdateOperation()
         {
-            EmailChangedSyncResult = new CoreUpdateResult<EmailAddressChangedContact>();
-            RetryEmailChangeAsCreateSyncResult = new SerialCreateSyncResult<EmailAddressCreatedContact>();
-            CoreUpdateSyncResult = new CoreUpdateResult<CoreOnlyChangedContact>();
-            RetryCoreUpdateAsCreateSyncResult = new SerialCreateSyncResult<EmailAddressCreatedContact>();
+            SerialUpdateResult = new SerialSyncResult();
+            RetryEmailExistsAsSerialUpdateResult = new SerialSyncResult();
         }
 
         public SyncActivityCoreUpdateOperation(DateTime executionStartTime)
         {
             Execution = new ExecutionTime(executionStartTime);
-            EmailChangedSyncResult = new CoreUpdateResult<EmailAddressChangedContact>();
-            RetryEmailChangeAsCreateSyncResult = new SerialCreateSyncResult<EmailAddressCreatedContact>();
-            CoreUpdateSyncResult = new CoreUpdateResult<CoreOnlyChangedContact>();
-            RetryCoreUpdateAsCreateSyncResult = new SerialCreateSyncResult<EmailAddressCreatedContact>();
+            SerialUpdateResult = new SerialSyncResult();
+            RetryEmailExistsAsSerialUpdateResult = new SerialSyncResult();
         }
 
         public IExecutionTime Execution { get; set; }
 
         public DateTime PreviousSyncDate { get; set; }
 
-        public int TotalContacts => EmailChangedSyncResult.TotalContacts +
-                                    CoreUpdateSyncResult.TotalContacts;
+        public int TotalContacts => SerialUpdateResult.TotalContacts;
 
         public int SuccessCount => InitialSuccessCount + RetrySuccessCount;
 
-        public int InitialSuccessCount => EmailChangedSyncResult.SuccessCount +
-                                          CoreUpdateSyncResult.SuccessCount;
+        public int InitialSuccessCount => SerialUpdateResult.SuccessCount;
 
-        public int RetrySuccessCount => RetryEmailChangeAsCreateSyncResult.SuccessCount +
-                                        RetryCoreUpdateAsCreateSyncResult.SuccessCount;
+        public int RetrySuccessCount => RetryEmailExistsAsSerialUpdateResult.SuccessCount;
 
-        public int InitialFailureCount => EmailChangedSyncResult.FailureCount +
-                                          CoreUpdateSyncResult.FailureCount;
+        public int InitialFailureCount => SerialUpdateResult.FailureCount;
 
-        public int RetryFailureCount =>   RetryEmailChangeAsCreateSyncResult.FailureCount +
-                                          RetryCoreUpdateAsCreateSyncResult.FailureCount;
+        public int RetryFailureCount => RetryEmailExistsAsSerialUpdateResult.FailureCount;
 
-        public int ContactDoesNotExistCount => EmailChangedSyncResult.ContactDoesNotExistCount +
-                                               CoreUpdateSyncResult.ContactDoesNotExistCount;
+        public int EmailAddressAlreadyExistsCount => SerialUpdateResult.EmailAddressAlreadyExistsCount +
+                                                     RetryEmailExistsAsSerialUpdateResult.EmailAddressAlreadyExistsCount;
 
-        public int ContactAlreadyExistsCount => RetryEmailChangeAsCreateSyncResult.ContactAlreadyExistsCount +
-                                                RetryCoreUpdateAsCreateSyncResult.ContactAlreadyExistsCount;
+        public int HubSpotApiRequestCount => SerialUpdateResult.SuccessCount +
+                                             SerialUpdateResult.FailureCount +
+                                             SerialUpdateResult.EmailAddressAlreadyExistsCount +
+                                             RetryEmailExistsAsSerialUpdateResult.SuccessCount +
+                                             RetryEmailExistsAsSerialUpdateResult.FailureCount;
 
-        public int HubSpotApiRequestCount => EmailChangedSyncResult.SuccessCount +
-                                             EmailChangedSyncResult.FailureCount +
-                                             EmailChangedSyncResult.ContactDoesNotExistCount +
-                                             RetryEmailChangeAsCreateSyncResult.SuccessCount +
-                                             RetryEmailChangeAsCreateSyncResult.FailureCount +
-                                             RetryEmailChangeAsCreateSyncResult.ContactAlreadyExistsCount +
-                                             CoreUpdateSyncResult.SuccessCount +
-                                             CoreUpdateSyncResult.FailureCount +
-                                             CoreUpdateSyncResult.ContactDoesNotExistCount +
-                                             RetryCoreUpdateAsCreateSyncResult.SuccessCount +
-                                             RetryCoreUpdateAsCreateSyncResult.FailureCount +
-                                             RetryCoreUpdateAsCreateSyncResult.ContactAlreadyExistsCount;
+        public SerialSyncResult SerialUpdateResult { get; set; }
 
-        public CoreUpdateResult<EmailAddressChangedContact> EmailChangedSyncResult { get; set; }
-
-        public SerialCreateSyncResult<EmailAddressCreatedContact> RetryEmailChangeAsCreateSyncResult { get; set; }
-
-        public CoreUpdateResult<CoreOnlyChangedContact> CoreUpdateSyncResult { get; set; }
-
-        public SerialCreateSyncResult<EmailAddressCreatedContact> RetryCoreUpdateAsCreateSyncResult { get; set; }
+        public SerialSyncResult RetryEmailExistsAsSerialUpdateResult { get; set; }
     }
 }

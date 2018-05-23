@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto
 {
-    public class BulkSyncResult
+    public class BulkSyncResult : ISyncResult
     {
         public BulkSyncResult()
         {

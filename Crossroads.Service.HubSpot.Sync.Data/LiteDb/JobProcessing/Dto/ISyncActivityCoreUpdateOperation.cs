@@ -1,5 +1,4 @@
 ﻿using System;
-using Crossroads.Service.HubSpot.Sync.Data.HubSpot.Models.Request;
 
 namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto
 {
@@ -26,18 +25,12 @@ namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto
 
         int RetryFailureCount { get; }
 
-        int ContactDoesNotExistCount { get; }
-
-        int ContactAlreadyExistsCount { get; }
+        int EmailAddressAlreadyExistsCount { get; }
 
         int HubSpotApiRequestCount { get; }
 
-        CoreUpdateResult<EmailAddressChangedContact> EmailChangedSyncResult { get; set; }
+        SerialSyncResult SerialUpdateResult { get; set; }
 
-        SerialCreateSyncResult<EmailAddressCreatedContact> RetryEmailChangeAsCreateSyncResult { get; set; }
-
-        CoreUpdateResult<CoreOnlyChangedContact> CoreUpdateSyncResult { get; set; }
-
-        SerialCreateSyncResult<EmailAddressCreatedContact> RetryCoreUpdateAsCreateSyncResult { get; set; }
+        SerialSyncResult RetryEmailExistsAsSerialUpdateResult { get; set; }
     }
 }

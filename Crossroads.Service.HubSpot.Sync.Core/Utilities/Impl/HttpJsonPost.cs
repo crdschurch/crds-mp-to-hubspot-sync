@@ -12,8 +12,7 @@ namespace Crossroads.Service.HubSpot.Sync.Core.Utilities.Impl
     /// </summary>
     public class HttpJsonPost : IHttpPost
     {
-        private const string ApplicationJsonMediaType = "application/json";
-        private readonly HttpClient _httpClient;
+        private HttpClient _httpClient;
         private readonly IJsonSerializer _jsonSerializer;
         private readonly ILogger<HttpJsonPost> _logger;
 
@@ -34,17 +33,37 @@ namespace Crossroads.Service.HubSpot.Sync.Core.Utilities.Impl
                 _logger.LogDebug(CoreEvent.Http.Post, $"Begin post to {fullUrl}...");
                 try
                 {
-                    var content = new StringContent(json, Encoding.UTF8, ApplicationJsonMediaType);
+                    var content = new StringContent(json, Encoding.UTF8, "application/json");
                     return _httpClient.PostAsync(requestUriPathAndQuery, content).Result;
                 }
-                catch (Exception exc)
+                catch (Exception exc) // network error
                 {
-                    _logger.LogError(CoreEvent.Exception, exc, $@"Exception occurred while making an API request.
-url: {fullUrl}
-json: {json}");
-                    return null;
+                    Log("Exception occurred trying to reach the API endpoint. Rethrowing to propagate error and ensure we abort the current operation.", fullUrl, json, exc);
+                    throw;
                 }
             }
+        }
+
+        public TDto GetResponseContent<TDto>(HttpResponseMessage httpResponseMessage)
+        {
+            if (httpResponseMessage == null) return default(TDto);
+
+            try
+            {
+                return _jsonSerializer.Deserialize<TDto>(httpResponseMessage.Content.ReadAsStringAsync().Result);
+            }
+            catch (Exception exc)
+            {
+                _logger.LogError(exc, "Exception occurred while getting content stream.");
+                return default(TDto);
+            }
+        }
+
+        private void Log(string message, string fullUrl, string json, Exception exc)
+        {
+            _logger.LogError(CoreEvent.Exception, exc, $@"{message}
+url: {fullUrl}
+json: {json}");
         }
     }
 }

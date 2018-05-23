@@ -1,4 +1,4 @@
-use [MinistryPlatform]
+use MinistryPlatform
 go
 
 -- Creates the appropriate database table records required in order to allow a stored procedure to be executed via the Ministry Platform web API
@@ -10,21 +10,21 @@ create or alter procedure dbo.crds_grant_mp_api_stored_procedure_execution_permi
 as
 
 begin
-    if (@StoredProcedureName is null or @StoredProcedureName = '')
+    if (@StoredProcedureName is null or ltrim(rtrim(@StoredProcedureName)) = '')
     begin
-        raiserror('A null value is not allowed for parameter "@StoredProcedureName". Please specify the name of the stored procedure to be granted Ministry Platform API execution permission.', 18, 1);
+        raiserror('A null or empty value is not allowed for parameter "@StoredProcedureName". Please specify the name of the stored procedure to be granted Ministry Platform API execution permission.', 18, 1);
         return;
     end
 
-    if (@RoleName is null or @RoleName = '')
+    if (@RoleName is null or ltrim(rtrim(@RoleName)) = '')
     begin
-        raiserror('A null value is not allowed for parameter "@RoleName". Check dbo.dp_Roles.Role_Name for the correct role name value.', 18, 1);
+        raiserror('A null or empty value is not allowed for parameter "@RoleName". Check dbo.dp_Roles.Role_Name for the correct role name value.', 18, 1);
         return;
     end
 
-    if (@Description is null or @Description = '')
+    if (@Description is null or ltrim(rtrim(@Description)) = '')
     begin
-        raiserror('A null value is not allowed for parameter "@Description". Please specify the purpose of the procedure for the proliferation of domain knowledge.', 9, 1);
+        raiserror('A null or empty value is not allowed for parameter "@Description". Please specify the purpose of the procedure for the proliferation of domain knowledge.', 9, 1);
         return;
     end
 

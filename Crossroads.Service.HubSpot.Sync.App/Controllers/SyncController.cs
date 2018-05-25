@@ -111,7 +111,9 @@ namespace Crossroads.Service.HubSpot.Sync.App.Controllers
                     return Content(
                         $@"Last successful sync dates<br/>
                         Registration: {dates.RegistrationSyncDate.ToLocalTime()}<br/>
-                        Core update: {dates.CoreUpdateSyncDate.ToLocalTime()}",
+                        Core update: {dates.CoreUpdateSyncDate.ToLocalTime()}<br />
+                        Age/Grade process date: {dates.AgeAndGradeProcessDate}<br />
+                        Age/Grade sync date: {dates.AgeAndGradeSyncDate}",
                         "text/html");
                 }
                 catch (Exception exc)
@@ -130,7 +132,7 @@ namespace Crossroads.Service.HubSpot.Sync.App.Controllers
             {
                 try
                 {
-                    return Json(_jobRepository.GetActivity(activityId));
+                    return Content(_jobRepository.GetActivity(activityId), "application/json");
                 }
                 catch (Exception exc)
                 {
@@ -172,7 +174,7 @@ namespace Crossroads.Service.HubSpot.Sync.App.Controllers
                     if (_configurationService.GetCurrentJobProcessingState() == SyncProcessingState.Processing)
                         return Content("Job is currently processing. Refresh later to see the latest sync results.");
 
-                    return Json(_jobRepository.GetMostRecentActivity());
+                    return Content(_jobRepository.GetMostRecentActivity(), "application/json");
                 }
                 catch (Exception exc)
                 {

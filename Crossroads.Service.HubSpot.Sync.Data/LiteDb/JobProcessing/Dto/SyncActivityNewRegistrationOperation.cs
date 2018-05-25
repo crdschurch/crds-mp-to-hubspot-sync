@@ -1,5 +1,4 @@
 ﻿using System;
-using Crossroads.Service.HubSpot.Sync.Data.HubSpot.Models.Request;
 
 namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto
 {
@@ -12,14 +11,14 @@ namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto
         public SyncActivityNewRegistrationOperation()
         {
             BulkCreateSyncResult = new BulkSyncResult();
-            SerialCreateSyncResult = new SerialCreateSyncResult<SerialCreateContact>();
+            SerialCreateSyncResult = new SerialSyncResult();
         }
 
         public SyncActivityNewRegistrationOperation(DateTime executionStartTime)
         {
             Execution = new ExecutionTime(executionStartTime);
             BulkCreateSyncResult = new BulkSyncResult();
-            SerialCreateSyncResult = new SerialCreateSyncResult<SerialCreateContact>();
+            SerialCreateSyncResult = new SerialSyncResult();
         }
 
         public IExecutionTime Execution { get; set; }
@@ -30,17 +29,17 @@ namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto
 
         public int SuccessCount => BulkCreateSyncResult.SuccessCount + SerialCreateSyncResult.SuccessCount;
 
-        public int ContactAlreadyExistsCount => SerialCreateSyncResult.ContactAlreadyExistsCount;
+        public int EmailAddressAlreadyExistsCount => SerialCreateSyncResult.EmailAddressAlreadyExistsCount;
 
         public int FailureCount => SerialCreateSyncResult.FailureCount;
 
         public int HubSpotApiRequestCount => BulkCreateSyncResult.BatchCount +
                                              SerialCreateSyncResult.SuccessCount +
                                              SerialCreateSyncResult.FailureCount +
-                                             SerialCreateSyncResult.ContactAlreadyExistsCount;
+                                             SerialCreateSyncResult.EmailAddressAlreadyExistsCount;
 
         public BulkSyncResult BulkCreateSyncResult { get; set; }
 
-        public SerialCreateSyncResult<SerialCreateContact> SerialCreateSyncResult { get; set; }
+        public SerialSyncResult SerialCreateSyncResult { get; set; }
     }
 }

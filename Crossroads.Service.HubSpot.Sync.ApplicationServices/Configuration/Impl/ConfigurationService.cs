@@ -38,9 +38,11 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Configuration.Impl
             if (syncDates.CoreUpdateSyncDate == default(DateTime)) // if this is true, we've never run for core MP contact updates
                 syncDates.CoreUpdateSyncDate = _inauguralSync.CoreUpdateSyncDate;
 
-            _logger.LogInformation($@"Last successful sync dates.
+            _logger.LogInformation($@"Last successful sync/process dates.
 new registration: {syncDates.RegistrationSyncDate}
-updates: {syncDates.CoreUpdateSyncDate}");
+core updates: {syncDates.CoreUpdateSyncDate}
+age and grade process: {syncDates.AgeAndGradeProcessDate}
+age and grade sync: {syncDates.AgeAndGradeSyncDate}");
 
             return syncDates;
         }

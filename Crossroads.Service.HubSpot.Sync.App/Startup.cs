@@ -67,12 +67,13 @@ namespace Crossroads.Service.HubSpot.Sync.App
             services.AddSingleton<IJsonSerializer, JsonSerializer>();
             services.AddSingleton<IMinistryPlatformContactRepository, MinistryPlatformContactRepository>();
             services.AddSingleton<ISyncMpContactsToHubSpotService, SyncMpContactsToHubSpotService>();
-            services.AddSingleton<IPrepareMpContactCoreUpdatesForHubSpot, PrepareMpContactCoreUpdatesForHubSpot>();
+            services.AddSingleton<IPrepareDataForHubSpot, PrepareDataForHubSpot>();
             services.AddSingleton(new LiteDatabase($"filename={Configuration["LiteDbPath"]};utc=true"));
             services.AddSingleton<ILiteDbRepository, LiteDbRepositoryWrapper>();
             services.AddSingleton<ILiteDbConfigurationProvider, LiteDbConfigurationProvider>();
             services.AddSingleton<IJobRepository, JobRepository>();
             services.AddSingleton<IConfigurationService, ConfigurationService>();
+            services.AddSingleton<ICleanUpSyncActivity, CleanUpSyncActivity>();
             services.AddSingleton(Configuration);
             services.Configure<InauguralSync>(Configuration.GetSection("InauguralSync"));
 
@@ -103,7 +104,7 @@ namespace Crossroads.Service.HubSpot.Sync.App
         {
             // Hackery for setting the application's base path for impending log files
             log4net.GlobalContext.Properties["AppLogRoot"] = Configuration["APP_LOG_ROOT"];
-            loggerFactory.AddLog4Net("log4net.config"); // defaults to this in root -- being explicit for the sake of explicit transparency/clarity
+            loggerFactory.AddLog4Net("log4net.config"); // defaults to this in root -- being explicit for the sake of transparency/clarity
 
             app.UseCors(builder => builder
                 .AllowAnyOrigin()

@@ -1,5 +1,4 @@
 ﻿using System;
-using Crossroads.Service.HubSpot.Sync.Data.HubSpot.Models.Request;
 
 namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto
 {
@@ -18,7 +17,7 @@ namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto
 
         int SuccessCount { get; }
 
-        int ContactAlreadyExistsCount { get; }
+        int EmailAddressAlreadyExistsCount { get; }
 
         int FailureCount { get; }
 
@@ -26,6 +25,6 @@ namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto
 
         BulkSyncResult BulkCreateSyncResult { get; set; }
 
-        SerialCreateSyncResult<SerialCreateContact> SerialCreateSyncResult { get; set; }
+        SerialSyncResult SerialCreateSyncResult { get; set; }
     }
 }

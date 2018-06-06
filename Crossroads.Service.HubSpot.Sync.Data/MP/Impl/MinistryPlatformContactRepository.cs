@@ -35,7 +35,7 @@ namespace Crossroads.Service.HubSpot.Sync.Data.MP.Impl
 
             try
             {
-                var token = _apiUserRepository.GetDefaultApiUserToken();
+                var token = _apiUserRepository.GetDefaultApiClientToken();
                 var data = _mpRestBuilder.NewRequestBuilder()
                     .WithAuthenticationToken(token)
                     .Build()
@@ -61,7 +61,7 @@ namespace Crossroads.Service.HubSpot.Sync.Data.MP.Impl
 
             try
             {
-                var token = _apiUserRepository.GetDefaultApiUserToken();
+                var token = _apiUserRepository.GetDefaultApiClientToken();
                 var data = _mpRestBuilder.NewRequestBuilder()
                     .WithAuthenticationToken(token)
                     .Build()
@@ -88,7 +88,7 @@ namespace Crossroads.Service.HubSpot.Sync.Data.MP.Impl
 
             try
             {
-                var token = _apiUserRepository.GetDefaultApiUserToken();
+                var token = _apiUserRepository.GetDefaultApiClientToken();
                 var data = _mpRestBuilder.NewRequestBuilder()
                     .WithAuthenticationToken(token)
                     .Build()
@@ -114,7 +114,7 @@ namespace Crossroads.Service.HubSpot.Sync.Data.MP.Impl
 
             try
             {
-                var token = _apiUserRepository.GetDefaultApiUserToken(); // dbo.Participants.Participant_Start_Date stores "local" datetime
+                var token = _apiUserRepository.GetDefaultApiClientToken(); // dbo.Participants.Participant_Start_Date stores "local" datetime
                 var parameters = new Dictionary<string, object> { { "@LastSuccessfulSyncDate", lastSuccessfulSyncDateLocal } };
                 var data = _mpRestBuilder.NewRequestBuilder()
                     .WithAuthenticationToken(token)
@@ -144,7 +144,7 @@ namespace Crossroads.Service.HubSpot.Sync.Data.MP.Impl
 
             try
             {
-                var token = _apiUserRepository.GetDefaultApiUserToken(); // dp_Audit_Logs.Date_Time stores Utc
+                var token = _apiUserRepository.GetDefaultApiClientToken(); // dp_Audit_Logs.Date_Time stores Utc
                 var parameters = new Dictionary<string, object> { { "@LastSuccessfulSyncDateUtc", lastSuccessfulSyncDateUtc } };
                 var data = _mpRestBuilder.NewRequestBuilder()
                     .WithAuthenticationToken(token)

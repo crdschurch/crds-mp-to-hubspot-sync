@@ -13,21 +13,41 @@ as
 
     -- each common table expression query definition's audit log data is grouped by the Ministry Platform database table of origin:
     -- dp_Users, Contacts, Households and Addresses
-    with UserAuditLog as (
+    with EmailAddressAuditLog as (
         select          MostRecentFieldChanges.RecordId as UserId,
                         'email' as PropertyName, -- the value of the "PropertyName" column corresponds to the "property name" used in HubSpot (passed along in the HS API payload)
-                        AuditLog.PreviousValue,
-                        AuditLog.NewValue
+                        InitialEmailChangeAuditLog.PreviousValue,
+                        LatestEmailChangeAuditLog.NewValue
 
-        from            dbo.vw_crds_audit_log AuditLog
-        join            (select * from dbo.crds_get_most_recent_field_changes('dp_Users', @LastSuccessfulSyncDateUtc) where FieldName = 'User_Name') MostRecentFieldChanges
-        on              AuditLog.RecordId = MostRecentFieldChanges.RecordId
-        and             AuditLog.OperationDateTime = MostRecentFieldChanges.Updated
-        and             AuditLog.FieldName = MostRecentFieldChanges.FieldName
-        and             AuditLog.TableName = MostRecentFieldChanges.TableName
-        where           AuditLog.NewValue is not null
-        and             AuditLog.NewValue <> ''
-        and             lower(isnull(AuditLog.PreviousValue, '')) <> lower(AuditLog.NewValue) -- we only want email addresses that have actually changed and case differences do not qualify
+        from            (
+                            select          MostRecentEmailChange.RecordId,
+                                            InitialEmail.Updated as InitialEmailChangeDate,
+                                            MostRecentEmailChange.Updated as LatestEmailChangeDate,
+                                            MostRecentEmailChange.FieldName,
+                                            MostRecentEmailChange.TableName
+
+                            from            dbo.crds_get_initial_field_changes('dp_Users', @LastSuccessfulSyncDateUtc) InitialEmail
+                            join            dbo.crds_get_most_recent_field_changes('dp_Users', @LastSuccessfulSyncDateUtc) MostRecentEmailChange
+                            on              InitialEmail.RecordId = MostRecentEmailChange.RecordId
+                            where           MostRecentEmailChange.FieldName = 'User_Name'
+                            and             InitialEmail.FieldName = 'User_Name'
+                        ) MostRecentFieldChanges
+
+        join            dbo.vw_crds_audit_log InitialEmailChangeAuditLog
+        on              InitialEmailChangeAuditLog.RecordId = MostRecentFieldChanges.RecordId
+        and             InitialEmailChangeAuditLog.OperationDateTime = MostRecentFieldChanges.InitialEmailChangeDate
+        and             InitialEmailChangeAuditLog.FieldName = MostRecentFieldChanges.FieldName
+        and             InitialEmailChangeAuditLog.TableName = MostRecentFieldChanges.TableName
+
+        join            dbo.vw_crds_audit_log LatestEmailChangeAuditLog
+        on              LatestEmailChangeAuditLog.RecordId = MostRecentFieldChanges.RecordId
+        and             LatestEmailChangeAuditLog.OperationDateTime = MostRecentFieldChanges.LatestEmailChangeDate
+        and             LatestEmailChangeAuditLog.FieldName = MostRecentFieldChanges.FieldName
+        and             LatestEmailChangeAuditLog.TableName = MostRecentFieldChanges.TableName
+
+        where           LatestEmailChangeAuditLog.NewValue is not null
+        and             LatestEmailChangeAuditLog.NewValue <> ''
+        and             lower(isnull(InitialEmailChangeAuditLog.PreviousValue, '')) <> lower(LatestEmailChangeAuditLog.NewValue) -- we only want email addresses that have actually changed and case differences do not qualify
     ),
     ContactAuditLog as (
         select          MostRecentFieldChanges.RecordId as ContactId,
@@ -129,14 +149,14 @@ as
     )
 
     --              email address legitimately (not casing, etc) changed
-    select          UserAuditLog.PropertyName,
-                    UserAuditLog.PreviousValue,
-                    UserAuditLog.NewValue,
+    select          EmailAddressAuditLog.PropertyName,
+                    EmailAddressAuditLog.PreviousValue,
+                    EmailAddressAuditLog.NewValue,
                     RelevantContacts.*
 
-    from            UserAuditLog
+    from            EmailAddressAuditLog
     join            RelevantContacts
-    on              RelevantContacts.UserId = UserAuditLog.UserId
+    on              RelevantContacts.UserId = EmailAddressAuditLog.UserId
 
     union
 

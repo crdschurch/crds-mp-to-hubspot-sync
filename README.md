@@ -1,6 +1,6 @@
 # crds-mp-hubspot-sync
 
-Syncs newly registered MP contacts to HubSpot
+Syncs newly registered Ministry Platform (MP) contacts, core MP contact updates and child age/grade data to HubSpot.
 
 ## Development
 
@@ -53,6 +53,6 @@ For full Crossroads TeamCity build and deployment instructions for a dotnet core
 
 To use logging, you may inject the ILogger<T> instance into the constructor of your dependent class definition, where T is the type of the subscribing class.
 
-Then, add the actual logging call as such: _logger.LogError($"Error in GetEventOpportunity: {ex.Message}", ex);
+Then, add the actual logging call as such: _logger.LogError("Error in...", ex);
 
 Other config settings live in appSettings.json.

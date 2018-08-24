@@ -100,6 +100,7 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Test.Services
             _clockMock.Setup(clock => clock.UtcNow).Returns(utcNowMockDateTime);
             _configSvcMock.Setup(svc => svc.GetCurrentJobProcessingState()).Returns(SyncProcessingState.Idle);
             _configSvcMock.Setup(svc => svc.GetLastSuccessfulSyncDates()).Returns(syncDates);
+            _configSvcMock.Setup(svc => svc.PersistActivity()).Returns(true);
             _jobRepoMock.Setup(repo => repo.SetSyncJobProcessingState(It.IsAny<SyncProcessingState>())).Returns<SyncProcessingState>(x => x);
             _jobRepoMock.Setup(repo => repo.SetLastSuccessfulSyncDates(It.IsAny<SyncDates>())).Returns<SyncDates>(x => x);
             _jobRepoMock.Setup(repo => repo.SaveHubSpotApiDailyRequestCount(It.IsAny<int>(), It.IsAny<DateTime>())).Returns(true);

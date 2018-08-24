@@ -26,7 +26,7 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services
     /// </summary>
     public interface IPrepareDataForHubSpot
     {
-        BulkContact[] Prep(IList<NewlyRegisteredMpContactDto> newContacts);
+        SerialContact[] Prep(IList<NewlyRegisteredMpContactDto> newContacts);
 
         SerialContact[] Prep(IDictionary<string, List<CoreUpdateMpContactDto>> contactUpdates);
 

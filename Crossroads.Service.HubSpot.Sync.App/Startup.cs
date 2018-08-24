@@ -79,10 +79,10 @@ namespace Crossroads.Service.HubSpot.Sync.App
 
             services.AddSingleton<ICreateOrUpdateContactsInHubSpot>(context =>
                 new CreateOrUpdateContactsInHubSpot(
-                    new HttpJsonPost(
+                    new HttpClientFacade(
                         new HttpClient { BaseAddress = new Uri(Configuration["HubSpotApiBaseUrl"]) },
                         context.GetService<IJsonSerializer>(),
-                        context.GetService<ILogger<HttpJsonPost>>()),
+                        context.GetService<ILogger<HttpClientFacade>>()),
                     context.GetService<IClock>(),
                     context.GetService<IJsonSerializer>(),
                     context.GetService<ISleep>(),

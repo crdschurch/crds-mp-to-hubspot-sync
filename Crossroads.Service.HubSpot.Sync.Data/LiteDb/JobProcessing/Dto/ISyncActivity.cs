@@ -11,9 +11,9 @@ namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto
 
         int HubSpotApiRequestCount { get; }
 
-        ISyncActivityNewRegistrationOperation NewRegistrationOperation { get; set; }
+        ISyncActivityOperation NewRegistrationOperation { get; set; }
 
-        ISyncActivityCoreUpdateOperation CoreUpdateOperation { get; set; }
+        ISyncActivityOperation CoreUpdateOperation { get; set; }
 
         ISyncActivityChildAgeAndGradeUpdateOperation ChildAgeAndGradeUpdateOperation { get; set; }
 

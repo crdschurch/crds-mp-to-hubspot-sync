@@ -31,11 +31,11 @@ namespace Crossroads.Service.HubSpot.Sync.Core.Serialization.Impl
                     return default(T);
                 try
                 {
-                    _logger.LogDebug($@"Begin deserialization...
+                    _logger.LogInformation($@"Begin deserialization...
 json: {serializedInput}");
                     if (selector.IsNotNullOrEmpty())
                     {
-                        _logger.LogDebug($"Using provided JSON root node selector: {selector}.");
+                        _logger.LogInformation($"Using provided JSON root node selector: {selector}.");
                         return JObject.Parse(serializedInput).SelectToken(selector).ToObject<T>();
                     }
 
@@ -48,7 +48,7 @@ json: {serializedInput}");
                 }
                 finally
                 {
-                    _logger.LogDebug("Deserialization complete.");
+                    _logger.LogInformation("Deserialization complete.");
                 }
             }
         }
@@ -69,7 +69,7 @@ json: {serializedInput}");
             {
                 try
                 {
-                    _logger.LogDebug("Begin serialization...");
+                    _logger.LogInformation("Begin serialization...");
                     return JsonConvert.SerializeObject(inputToBeSerialized);
                 }
                 catch (Exception exc)
@@ -79,7 +79,7 @@ json: {serializedInput}");
                 }
                 finally
                 {
-                    _logger.LogDebug("Serialization complete.");
+                    _logger.LogInformation("Serialization complete.");
                 }
             }
         }

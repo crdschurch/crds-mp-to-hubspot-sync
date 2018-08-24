@@ -17,10 +17,10 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
             _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
         }
 
-        public BulkContact[] Prep(IList<NewlyRegisteredMpContactDto> newContacts)
+        public SerialContact[] Prep(IList<NewlyRegisteredMpContactDto> newContacts)
         {
-            if(newContacts == null || newContacts.Count == decimal.Zero) return new BulkContact[0];
-            return _mapper.Map<BulkContact[]>(newContacts);
+            if(newContacts == null || newContacts.Count == decimal.Zero) return new SerialContact[0];
+            return _mapper.Map<SerialContact[]>(newContacts);
         }
 
         public SerialContact[] Prep(IDictionary<string, List<CoreUpdateMpContactDto>> contactUpdates)
@@ -30,11 +30,8 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
 
             foreach (var contactKeyValue in contactUpdates)
             {
-                var containsEmailAddressChange =
-                    contactKeyValue.Value.Exists(update => update.PropertyName.Equals("email", StringComparison.OrdinalIgnoreCase));
-
-                // MP audit log does NOT contain email address in contact's manifest of changes
-                if (containsEmailAddressChange == false)
+                var containsEmailAddressChange = contactKeyValue.Value.Exists(update => update.PropertyName.Equals("email", StringComparison.OrdinalIgnoreCase));
+                if (containsEmailAddressChange == false) // MP audit log does NOT contain email address in contact's manifest of changes
                 {
                     contacts.Add(_mapper.Map<NonEmailAttributesChangedContact>(contactKeyValue.Value));
                     continue;

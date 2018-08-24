@@ -6,8 +6,10 @@ namespace Crossroads.Service.HubSpot.Sync.Core.Utilities
     /// <summary>
     /// Posts data to the provided endpoint.
     /// </summary>
-    public interface IHttpPost
+    public interface IHttpClientFacade
     {
+        HttpResponseMessage Get(string requestUriPathAndQuery);
+
         /// <summary>
         /// Posts the specified DTO to the provided endpoint.
         /// </summary>
@@ -16,6 +18,8 @@ namespace Crossroads.Service.HubSpot.Sync.Core.Utilities
         /// <param name="postBody">Instance of type <see cref="TDto"> to post</see>/></param>
         /// <returns>Returns the http response message.</returns>
         HttpResponseMessage Post<TDto>(string requestUriPathAndQuery, TDto postBody);
+
+        HttpResponseMessage Delete(string requestUriPathAndQuery);
 
         /// <summary>
         /// Attempts to ask for, receive and deserialize the response content stream to the

@@ -12,23 +12,24 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
 
         private void RemoveContactsFromFailures(ISyncActivity activity)
         {
-            activity.NewRegistrationOperation.BulkCreateSyncResult.FailedBatches.ForEach(RemoveContacts);
-            activity.NewRegistrationOperation.SerialCreateSyncResult.Failures.ForEach(RemoveContact);
+            activity.NewRegistrationOperation.SerialCreateResult.Failures.ForEach(NullFailedContact);
+            activity.NewRegistrationOperation.SerialUpdateResult.Failures.ForEach(NullFailedContact);
 
-            activity.CoreUpdateOperation.SerialUpdateResult.Failures.ForEach(RemoveContact);
-            activity.CoreUpdateOperation.RetryEmailExistsAsSerialUpdateResult.Failures.ForEach(RemoveContact);
+            activity.CoreUpdateOperation.SerialUpdateResult.Failures.ForEach(NullFailedContact);
+            activity.CoreUpdateOperation.SerialCreateResult.Failures.ForEach(NullFailedContact);
+            activity.CoreUpdateOperation.SerialReconciliationResult.Failures.ForEach(NullFailedContact);
 
-            activity.ChildAgeAndGradeUpdateOperation.BulkUpdateSyncResult100.FailedBatches.ForEach(RemoveContacts);
-            activity.ChildAgeAndGradeUpdateOperation.BulkUpdateSyncResult10.FailedBatches.ForEach(RemoveContacts);
-            activity.ChildAgeAndGradeUpdateOperation.RetryBulkUpdateAsSerialUpdateResult.Failures.ForEach(RemoveContact);
+            activity.ChildAgeAndGradeUpdateOperation.BulkUpdateSyncResult100.FailedBatches.ForEach(NullFailedContacts);
+            activity.ChildAgeAndGradeUpdateOperation.BulkUpdateSyncResult10.FailedBatches.ForEach(NullFailedContacts);
+            activity.ChildAgeAndGradeUpdateOperation.RetryBulkUpdateAsSerialUpdateResult.Failures.ForEach(NullFailedContact);
         }
 
-        private void RemoveContacts(BulkSyncFailure failure)
+        private void NullFailedContacts(BulkSyncFailure failure)
         {
             failure.Contacts = null;
         }
 
-        private void RemoveContact(SerialSyncFailure failure)
+        private void NullFailedContact(SerialSyncFailure failure)
         {
             failure.Contact = null;
         }

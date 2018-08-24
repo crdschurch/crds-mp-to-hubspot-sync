@@ -11,7 +11,7 @@ as
                         dp_Users.[User_ID] as UserId,                                                                           -- NOT HubSpot
                         Contacts.Household_ID as HouseholdId,                                                                   -- NOT HubSpot
                         Contacts.Contact_ID as MinistryPlatformContactId,                                                       -- HubSpot ▼ ▼ ▼ (everything here and below matches to a HubSpot contact attribute identifier)
-                        dp_Users.[User_Name] as Email,
+                        dp_Users.[User_Name] as Email,                                                                          -- switched to dp_Users.User_Name based on dbo.crds_service_update_email_nightly
                         Contacts.Nickname as Firstname,
                         Contacts.Last_Name as Lastname,
                         isnull(Congregations.Congregation_Name, '') as Community,

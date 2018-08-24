@@ -16,7 +16,7 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.AutoMapper
 
             // CREATE OR UPDATE SCENARIOS
             // MP data to HubSpot mapping definitions
-            CreateMap<NewlyRegisteredMpContactDto, BulkContact>()
+            CreateMap<NewlyRegisteredMpContactDto, SerialContact>()
                 .ForMember(hubSpotContact => hubSpotContact.Email, memberOptions => memberOptions.MapFrom(dto => dto.Email))
                 .AfterMap(AddCoreAttributesToHubSpotProperties)
                 .AfterMap((updates, targetContact) => AddTangentialAttributesToHubSpotProperties(targetContact, environment));

@@ -8,8 +8,8 @@ namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto
     {
         public SyncActivity()
         {
-            NewRegistrationOperation = new SyncActivityNewRegistrationOperation();
-            CoreUpdateOperation = new SyncActivityCoreUpdateOperation();
+            NewRegistrationOperation = new SyncActivityOperation();
+            CoreUpdateOperation = new SyncActivityOperation();
             ChildAgeAndGradeUpdateOperation = new SyncActivityChildAgeAndGradeUpdateOperation();
         }
 
@@ -17,8 +17,8 @@ namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto
         {
             Execution = new ExecutionTime(executionStartTime);
             Id = $"{nameof(SyncActivity)}_{Execution.StartUtc:u}"; // ISO8601: universal/sortable
-            NewRegistrationOperation = new SyncActivityNewRegistrationOperation();
-            CoreUpdateOperation = new SyncActivityCoreUpdateOperation();
+            NewRegistrationOperation = new SyncActivityOperation();
+            CoreUpdateOperation = new SyncActivityOperation();
             ChildAgeAndGradeUpdateOperation = new SyncActivityChildAgeAndGradeUpdateOperation();
         }
 
@@ -44,16 +44,16 @@ namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto
                                                      ChildAgeAndGradeUpdateOperation.EmailAddressAlreadyExistsCount;
 
         public int FailureCount => NewRegistrationOperation.FailureCount +
-                                   CoreUpdateOperation.RetryFailureCount +
+                                   CoreUpdateOperation.FailureCount +
                                    ChildAgeAndGradeUpdateOperation.RetryFailureCount;
 
         public int HubSpotApiRequestCount => NewRegistrationOperation.HubSpotApiRequestCount +
                                              CoreUpdateOperation.HubSpotApiRequestCount +
                                              ChildAgeAndGradeUpdateOperation.HubSpotApiRequestCount;
 
-        public ISyncActivityNewRegistrationOperation NewRegistrationOperation { get; set; }
+        public ISyncActivityOperation NewRegistrationOperation { get; set; }
 
-        public ISyncActivityCoreUpdateOperation CoreUpdateOperation { get; set; }
+        public ISyncActivityOperation CoreUpdateOperation { get; set; }
 
         public ISyncActivityChildAgeAndGradeUpdateOperation ChildAgeAndGradeUpdateOperation { get; set; }
 

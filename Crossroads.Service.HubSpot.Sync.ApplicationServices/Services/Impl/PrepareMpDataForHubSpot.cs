@@ -8,11 +8,11 @@ using System.Linq;
 
 namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
 {
-    public class PrepareDataForHubSpot : IPrepareDataForHubSpot
+    public class PrepareMpDataForHubSpot : IPrepareMpDataForHubSpot
     {
         private readonly IMapper _mapper;
 
-        public PrepareDataForHubSpot(IMapper mapper)
+        public PrepareMpDataForHubSpot(IMapper mapper)
         {
             _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
         }

@@ -11,14 +11,14 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Test.Services
 {
     public class PrepareDataForHubSpotTests
     {
-        private readonly PrepareDataForHubSpot _fixture;
+        private readonly PrepareMpDataForHubSpot _fixture;
 
         private readonly Mock<IMapper> _mapperMock;
 
         public PrepareDataForHubSpotTests()
         {
             _mapperMock = new Mock<IMapper>(MockBehavior.Strict);
-            _fixture = new PrepareDataForHubSpot(_mapperMock.Object);
+            _fixture = new PrepareMpDataForHubSpot(_mapperMock.Object);
         }
 
         [Fact]

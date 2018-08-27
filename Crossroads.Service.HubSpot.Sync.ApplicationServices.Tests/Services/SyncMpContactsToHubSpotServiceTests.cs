@@ -27,7 +27,7 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Test.Services
         private readonly Mock<IClock> _clockMock;
         private readonly Mock<IConfigurationService> _configSvcMock;
         private readonly Mock<IJobRepository> _jobRepoMock;
-        private readonly Mock<IPrepareDataForHubSpot> _dataPrepMock;
+        private readonly Mock<IPrepareMpDataForHubSpot> _dataPrepMock;
         private readonly Mock<ICleanUpSyncActivity> _syncActivityCleanerMock;
         private readonly Mock<ILogger<SyncMpContactsToHubSpotService>> _loggerMock;
         private readonly SyncMpContactsToHubSpotService _fixture;
@@ -39,7 +39,7 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Test.Services
             _clockMock = new Mock<IClock>(MockBehavior.Strict);
             _configSvcMock = new Mock<IConfigurationService>(MockBehavior.Strict);
             _jobRepoMock = new Mock<IJobRepository>(MockBehavior.Strict);
-            _dataPrepMock = new Mock<IPrepareDataForHubSpot>(MockBehavior.Strict);
+            _dataPrepMock = new Mock<IPrepareMpDataForHubSpot>(MockBehavior.Strict);
             IValidator<ISyncActivity> syncActivityValidator = new SyncActivityValidator();
             _syncActivityCleanerMock = new Mock<ICleanUpSyncActivity>(MockBehavior.Strict);
             _loggerMock = new Mock<ILogger<SyncMpContactsToHubSpotService>>(MockBehavior.Default);
@@ -100,6 +100,7 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Test.Services
             _clockMock.Setup(clock => clock.UtcNow).Returns(utcNowMockDateTime);
             _configSvcMock.Setup(svc => svc.GetCurrentJobProcessingState()).Returns(SyncProcessingState.Idle);
             _configSvcMock.Setup(svc => svc.GetLastSuccessfulSyncDates()).Returns(syncDates);
+            _configSvcMock.Setup(svc => svc.PersistActivity()).Returns(true);
             _jobRepoMock.Setup(repo => repo.SetSyncJobProcessingState(It.IsAny<SyncProcessingState>())).Returns<SyncProcessingState>(x => x);
             _jobRepoMock.Setup(repo => repo.SetLastSuccessfulSyncDates(It.IsAny<SyncDates>())).Returns<SyncDates>(x => x);
             _jobRepoMock.Setup(repo => repo.SaveHubSpotApiDailyRequestCount(It.IsAny<int>(), It.IsAny<DateTime>())).Returns(true);

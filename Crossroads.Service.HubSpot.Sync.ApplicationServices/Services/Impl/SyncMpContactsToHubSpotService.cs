@@ -22,7 +22,7 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
         private readonly IClock _clock;
         private readonly IConfigurationService _configurationService;
         private readonly IJobRepository _jobRepository;
-        private readonly IPrepareDataForHubSpot _dataPrep;
+        private readonly IPrepareMpDataForHubSpot _dataPrep;
         private readonly IValidator<ISyncActivity> _syncActivityValidator;
         private readonly ICleanUpSyncActivity _syncActivityCleaner;
         private readonly ILogger<SyncMpContactsToHubSpotService> _logger;
@@ -33,7 +33,7 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
             IClock clock,
             IConfigurationService configurationService,
             IJobRepository jobRepository,
-            IPrepareDataForHubSpot dataPrep,
+            IPrepareMpDataForHubSpot dataPrep,
             IValidator<ISyncActivity> syncActivityValidator,
             ICleanUpSyncActivity syncActivityCleaner,
             ILogger<SyncMpContactsToHubSpotService> logger)

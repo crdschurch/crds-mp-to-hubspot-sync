@@ -76,6 +76,7 @@ namespace Crossroads.Service.HubSpot.Sync.App
             services.AddSingleton<ICleanUpSyncActivity, CleanUpSyncActivity>();
             services.AddSingleton(Configuration);
             services.Configure<InauguralSync>(Configuration.GetSection("InauguralSync"));
+            services.Configure<DocumentDbSettings>(Configuration.GetSection("DocumentDbSettings"));
 
             services.AddSingleton<ICreateOrUpdateContactsInHubSpot>(context =>
                 new CreateOrUpdateContactsInHubSpot(

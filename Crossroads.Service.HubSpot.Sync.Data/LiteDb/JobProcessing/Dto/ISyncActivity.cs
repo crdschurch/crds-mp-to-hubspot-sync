@@ -9,6 +9,8 @@ namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto
 
         int EmailAddressAlreadyExistsCount { get; }
 
+        int EmailAddressDoesNotExistCount { get; }
+
         int HubSpotApiRequestCount { get; }
 
         ISyncActivityOperation NewRegistrationOperation { get; set; }

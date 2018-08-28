@@ -27,7 +27,7 @@ namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto
 
         public DateTime PreviousSyncDate { get; set; }
 
-        public int TotalContacts => SerialUpdateResult.TotalContacts;
+        public int TotalContacts => SerialCreateResult.TotalContacts + SerialUpdateResult.TotalContacts; // a little strange, but necessary (leaky abstraction?)
 
         public int SuccessCount => UpdateSuccessCount + CreateSuccessCount + ReconciliationSuccessCount;
 

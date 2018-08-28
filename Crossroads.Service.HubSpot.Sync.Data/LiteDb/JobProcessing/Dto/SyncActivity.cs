@@ -43,6 +43,9 @@ namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto
                                                      CoreUpdateOperation.EmailAddressAlreadyExistsCount +
                                                      ChildAgeAndGradeUpdateOperation.EmailAddressAlreadyExistsCount;
 
+        public int EmailAddressDoesNotExistCount => NewRegistrationOperation.EmailAddressDoesNotExistCount +
+                                                    CoreUpdateOperation.EmailAddressDoesNotExistCount;
+
         public int FailureCount => NewRegistrationOperation.FailureCount +
                                    CoreUpdateOperation.FailureCount +
                                    ChildAgeAndGradeUpdateOperation.RetryFailureCount;

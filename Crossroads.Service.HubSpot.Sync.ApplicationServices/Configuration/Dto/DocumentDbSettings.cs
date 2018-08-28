@@ -1,5 +1,4 @@
-﻿
-namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Configuration.Dto
+﻿namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Configuration.Dto
 {
     public class DocumentDbSettings
     {

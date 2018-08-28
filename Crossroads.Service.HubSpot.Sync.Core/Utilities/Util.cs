@@ -1,7 +1,5 @@
 ﻿using log4net;
 using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 
 namespace Crossroads.Service.HubSpot.Sync.Core.Utilities
 {
@@ -33,8 +31,8 @@ namespace Crossroads.Service.HubSpot.Sync.Core.Utilities
         /// <summary>
         /// Syntactic sugar for wrapping a function call in a try catch that will ultimately
         /// swallow the exception. Useful for wrapping around methods whose failure should not
-        /// preclude subsequent processing. Any logging should have been done higher up in the
-        /// stack.
+        /// preclude subsequent processing. Any logging should have either been done higher up
+        /// in the stack or in the <param name="catchMethod">catchMethod</param> parameter.
         /// </summary>
         public static void TryCatchSwallow(Action methodToMuzzle, Action catchMethod = null, Action finallyMethod = null)
         {

@@ -58,25 +58,13 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Validation
             return (deltaLog.InsertCount == 0 && deltaLog.UpdateCount == 0) == false;
         }
 
-        private bool NotHaveEncounteredHubSpotIssuesDuringAgeGradeUpdateOperation(ISyncActivityChildAgeAndGradeUpdateOperation operation)
-        {
-            var failures = operation.BulkUpdateSyncResult100.FailedBatches
-                    .Union<IFailureDetails>(operation.BulkUpdateSyncResult10.FailedBatches)
-                    .Union(operation.RetryBulkUpdateAsSerialUpdateResult.Failures).ToList();
-
-            return HubSpotIssuesEncountered(failures) == false;
-        }
-
         /// <summary>
         /// If a property doesn't exist in HubSpot, then don't save a last successful date for
         /// new registrations b/c records have been rejected that need to be retried.
         /// </summary>
-        private bool NotHaveEncounteredHubSpotIssuesDuringNewRegistrationOperation(ISyncActivityNewRegistrationOperation operation)
+        private bool NotHaveEncounteredHubSpotIssuesDuringNewRegistrationOperation(ISyncActivityOperation operation)
         {
-            var failures = operation.BulkCreateSyncResult.FailedBatches
-                    .Union<IFailureDetails>(operation.SerialCreateSyncResult.Failures)
-                    .ToList();
-
+            var failures = operation.SerialCreateResult.Failures.Union(operation.SerialUpdateResult.Failures).ToList();
             return HubSpotIssuesEncountered(failures) == false;
         }
 
@@ -84,9 +72,21 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Validation
         /// If a property doesn't exist in HubSpot, then don't save last successful dates for core
         /// contact updates b/c records have been rejected that need to be retried.
         /// </summary>
-        public bool NotHaveEncounteredHubSpotIssuesDuringCoreUpdateOperation(ISyncActivityCoreUpdateOperation operation)
+        public bool NotHaveEncounteredHubSpotIssuesDuringCoreUpdateOperation(ISyncActivityOperation operation)
         {
-            var failures = operation.SerialUpdateResult.Failures.Union<IFailureDetails>(operation.RetryEmailExistsAsSerialUpdateResult.Failures).ToList();
+            var failures = operation.SerialUpdateResult.Failures
+                .Union(operation.SerialCreateResult.Failures)
+                .Union(operation.SerialReconciliationResult.Failures).ToList();
+
+            return HubSpotIssuesEncountered(failures) == false;
+        }
+
+        private bool NotHaveEncounteredHubSpotIssuesDuringAgeGradeUpdateOperation(ISyncActivityChildAgeAndGradeUpdateOperation operation)
+        {
+            var failures = operation.BulkUpdateSyncResult100.FailedBatches
+                .Union<IFailureDetails>(operation.BulkUpdateSyncResult10.FailedBatches)
+                .Union(operation.RetryBulkUpdateAsSerialUpdateResult.Failures).ToList();
+
             return HubSpotIssuesEncountered(failures) == false;
         }
 

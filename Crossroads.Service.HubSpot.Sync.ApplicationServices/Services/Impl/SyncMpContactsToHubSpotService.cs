@@ -18,11 +18,11 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
     public class SyncMpContactsToHubSpotService : ISyncMpContactsToHubSpotService
     {
         private readonly IMinistryPlatformContactRepository _ministryPlatformContactRepository;
-        private readonly ICreateOrUpdateContactsInHubSpot _hubSpotContactSyncer;
+        private readonly ICreateOrUpdateContactsInHubSpot _contactSyncer;
         private readonly IClock _clock;
         private readonly IConfigurationService _configurationService;
         private readonly IJobRepository _jobRepository;
-        private readonly IPrepareDataForHubSpot _dataPrep;
+        private readonly IPrepareMpDataForHubSpot _dataPrep;
         private readonly IValidator<ISyncActivity> _syncActivityValidator;
         private readonly ICleanUpSyncActivity _syncActivityCleaner;
         private readonly ILogger<SyncMpContactsToHubSpotService> _logger;
@@ -33,13 +33,13 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
             IClock clock,
             IConfigurationService configurationService,
             IJobRepository jobRepository,
-            IPrepareDataForHubSpot dataPrep,
+            IPrepareMpDataForHubSpot dataPrep,
             IValidator<ISyncActivity> syncActivityValidator,
             ICleanUpSyncActivity syncActivityCleaner,
             ILogger<SyncMpContactsToHubSpotService> logger)
         {
             _ministryPlatformContactRepository = ministryPlatformContactRepository ?? throw new ArgumentNullException(nameof(ministryPlatformContactRepository));
-            _hubSpotContactSyncer = hubSpotContactCreatorUpdater ?? throw new ArgumentNullException(nameof(hubSpotContactCreatorUpdater));
+            _contactSyncer = hubSpotContactCreatorUpdater ?? throw new ArgumentNullException(nameof(hubSpotContactCreatorUpdater));
             _clock = clock ?? throw new ArgumentNullException(nameof(clock));
             _configurationService = configurationService ?? throw new ArgumentNullException(nameof(configurationService));
             _jobRepository = jobRepository ?? throw new ArgumentNullException(nameof(jobRepository));
@@ -75,9 +75,9 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
                     syncDates.AgeAndGradeSyncDate = ageGradeDeltaLog.SyncCompletedUtc ?? default(DateTime); // go ahead and set in case there's nothing to do
                     _jobRepository.SetLastSuccessfulSyncDates(syncDates);
                 }, () => _logger.LogWarning("Age/grade calculation and persistence operation aborted."));
-                
+
                 Util.TryCatchSwallow(() => { // create contacts
-                    syncJob.NewRegistrationOperation = Create(syncJob.PreviousSyncDates.RegistrationSyncDate);
+                    syncJob.NewRegistrationOperation = SyncNewRegistrations(syncJob.PreviousSyncDates.RegistrationSyncDate);
                     if (_syncActivityValidator.Validate(syncJob, ruleSet: RuleSetName.Registration).IsValid)
                     {
                         syncDates.RegistrationSyncDate = syncJob.NewRegistrationOperation.Execution.StartUtc;
@@ -86,7 +86,7 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
                 }, () => _logger.LogWarning("Sync new registrations operation aborted."));
 
                 Util.TryCatchSwallow(() => { // update core contact properties
-                    syncJob.CoreUpdateOperation = Update(syncJob.PreviousSyncDates.CoreUpdateSyncDate);
+                    syncJob.CoreUpdateOperation = SyncCoreUpdates(syncJob.PreviousSyncDates.CoreUpdateSyncDate);
                     if (_syncActivityValidator.Validate(syncJob, ruleSet: RuleSetName.CoreUpdate).IsValid)
                     {
                         syncDates.CoreUpdateSyncDate = syncJob.CoreUpdateOperation.Execution.StartUtc;
@@ -95,7 +95,7 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
                 }, () => _logger.LogWarning("Sync core updates operation aborted."));
 
                 // sync age and grade data to hubspot contacts
-                syncJob.ChildAgeAndGradeUpdateOperation = UpdateChildAgeAndGradeData(ageGradeDeltaLog, syncJob.PreviousSyncDates.AgeAndGradeSyncDate);
+                syncJob.ChildAgeAndGradeUpdateOperation = SyncChildAgeAndGradeData(ageGradeDeltaLog, syncJob.PreviousSyncDates.AgeAndGradeSyncDate);
                 if (_syncActivityValidator.Validate(syncJob, ruleSet: RuleSetName.AgeGradeUpdate).IsValid)
                 {
                     ageGradeDeltaLog.SyncCompletedUtc = syncDates.AgeAndGradeSyncDate = _ministryPlatformContactRepository.SetChildAgeAndGradeDeltaLogSyncCompletedUtcDate();
@@ -117,21 +117,28 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
                 syncJob.SyncProcessingState = syncState;
                 syncJob.Execution.FinishUtc = _clock.UtcNow;
                 _syncActivityCleaner.CleanUp(syncJob);
-                _jobRepository.SaveSyncActivity(syncJob);
+                if(_configurationService.PersistActivity())
+                    _jobRepository.SaveSyncActivity(syncJob);
                 _logger.LogInformation("Exiting...");
             }
         }
 
-        private ISyncActivityNewRegistrationOperation Create(DateTime lastSuccessfulSyncDate)
+        /// <summary>
+        /// Handles create, update and reconciliation scenarios for MP CRM contacts identified as new registrants that ought to exist
+        /// in the HubSpot CRM.
+        /// </summary>
+        private ISyncActivityOperation SyncNewRegistrations(DateTime lastSuccessfulSyncDate)
         {
-            var activity = new SyncActivityNewRegistrationOperation(_clock.UtcNow) {PreviousSyncDate = lastSuccessfulSyncDate};
+            var activity = new SyncActivityOperation(_clock.UtcNow) {PreviousSyncDate = lastSuccessfulSyncDate};
 
             try
             {
                 _logger.LogInformation("Starting new MP registrations to HubSpot one-way sync operation...");
                 var newContacts = _ministryPlatformContactRepository.GetNewlyRegisteredContacts(lastSuccessfulSyncDate); // talk to MP
-                activity.BulkCreateSyncResult = _hubSpotContactSyncer.BulkSync(_dataPrep.Prep(newContacts));
-                activity.SerialCreateSyncResult = _hubSpotContactSyncer.SerialSync(_dataPrep.ToSerial(activity.BulkCreateSyncResult.FailedBatches));
+                activity.SerialCreateResult = _contactSyncer.SerialCreate(_dataPrep.Prep(newContacts)); // create in HubSpot
+                activity.SerialUpdateResult = _contactSyncer.SerialUpdate(activity.SerialCreateResult.EmailAddressesAlreadyExist.ToArray()); // update in HubSpot
+                activity.SerialReconciliationResult = _contactSyncer.ReconcileConflicts(activity.SerialUpdateResult.EmailAddressesAlreadyExist.ToArray());
+
                 return activity;
             }
             catch (Exception exc)
@@ -146,18 +153,21 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
             }
         }
 
-        private ISyncActivityCoreUpdateOperation Update(DateTime lastSuccessfulSyncDate)
+        /// <summary>
+        /// Capable of accommodating email address (unique identifier in HubSpot) change and other core contact attribute/property updates.
+        /// Can also create a contact if it does not exist.
+        /// </summary>
+        private ISyncActivityOperation SyncCoreUpdates(DateTime lastSuccessfulSyncDate)
         {
-            var activity = new SyncActivityCoreUpdateOperation(_clock.UtcNow) { PreviousSyncDate = lastSuccessfulSyncDate };
+            var activity = new SyncActivityOperation(_clock.UtcNow) { PreviousSyncDate = lastSuccessfulSyncDate };
 
             try
             {
                 _logger.LogInformation("Starting MP contact core updates to HubSpot one-way sync operation...");
                 var updates = _dataPrep.Prep(_ministryPlatformContactRepository.GetAuditedContactUpdates(lastSuccessfulSyncDate));
-
-                // try both email changed and core updates for any contacts that do not yet exist in HubSpot
-                activity.SerialUpdateResult = _hubSpotContactSyncer.SerialSync(updates);
-                activity.RetryEmailExistsAsSerialUpdateResult = _hubSpotContactSyncer.SerialSync(activity.SerialUpdateResult.EmailAddressesAlreadyExist.ToArray());
+                activity.SerialUpdateResult = _contactSyncer.SerialUpdate(updates);
+                activity.SerialCreateResult = _contactSyncer.SerialCreate(activity.SerialUpdateResult.EmailAddressesDoNotExist.ToArray());
+                activity.SerialReconciliationResult = _contactSyncer.ReconcileConflicts(activity.SerialUpdateResult.EmailAddressesAlreadyExist.ToArray());
 
                 return activity;
             }
@@ -173,7 +183,7 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
             }
         }
 
-        private ISyncActivityChildAgeAndGradeUpdateOperation UpdateChildAgeAndGradeData(ChildAgeAndGradeDeltaLogDto deltaResult, DateTime lastSuccessfulSyncDate)
+        private ISyncActivityChildAgeAndGradeUpdateOperation SyncChildAgeAndGradeData(ChildAgeAndGradeDeltaLogDto deltaResult, DateTime lastSuccessfulSyncDate)
         {
             var activity = new SyncActivityChildAgeAndGradeUpdateOperation(_clock.UtcNow)
             {
@@ -184,9 +194,9 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
             try
             {
                 _logger.LogInformation("Starting MP contact age/grade count updates to HubSpot one-way sync operation...");
-                activity.BulkUpdateSyncResult100 = _hubSpotContactSyncer.BulkSync(_dataPrep.Prep(_ministryPlatformContactRepository.GetAgeAndGradeGroupDataForContacts()), batchSize: 100);
-                activity.BulkUpdateSyncResult10 = _hubSpotContactSyncer.BulkSync(_dataPrep.ToBulk(activity.BulkUpdateSyncResult100.FailedBatches), batchSize: 10);
-                activity.RetryBulkUpdateAsSerialUpdateResult = _hubSpotContactSyncer.SerialSync(_dataPrep.ToSerial(activity.BulkUpdateSyncResult10.FailedBatches));
+                activity.BulkUpdateSyncResult100 = _contactSyncer.BulkSync(_dataPrep.Prep(_ministryPlatformContactRepository.GetAgeAndGradeGroupDataForContacts()), batchSize: 100);
+                activity.BulkUpdateSyncResult10 = _contactSyncer.BulkSync(_dataPrep.ToBulk(activity.BulkUpdateSyncResult100.FailedBatches), batchSize: 10);
+                activity.RetryBulkUpdateAsSerialUpdateResult = _contactSyncer.SerialUpdate(_dataPrep.ToSerial(activity.BulkUpdateSyncResult10.FailedBatches));
                 return activity;
             }
             catch (Exception exc)

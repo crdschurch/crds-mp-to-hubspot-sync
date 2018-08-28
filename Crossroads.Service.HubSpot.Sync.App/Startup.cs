@@ -67,7 +67,7 @@ namespace Crossroads.Service.HubSpot.Sync.App
             services.AddSingleton<IJsonSerializer, JsonSerializer>();
             services.AddSingleton<IMinistryPlatformContactRepository, MinistryPlatformContactRepository>();
             services.AddSingleton<ISyncMpContactsToHubSpotService, SyncMpContactsToHubSpotService>();
-            services.AddSingleton<IPrepareDataForHubSpot, PrepareDataForHubSpot>();
+            services.AddSingleton<IPrepareMpDataForHubSpot, PrepareMpDataForHubSpot>();
             services.AddSingleton(new LiteDatabase($"filename={Configuration["LiteDbPath"]};utc=true"));
             services.AddSingleton<ILiteDbRepository, LiteDbRepositoryWrapper>();
             services.AddSingleton<ILiteDbConfigurationProvider, LiteDbConfigurationProvider>();
@@ -76,13 +76,14 @@ namespace Crossroads.Service.HubSpot.Sync.App
             services.AddSingleton<ICleanUpSyncActivity, CleanUpSyncActivity>();
             services.AddSingleton(Configuration);
             services.Configure<InauguralSync>(Configuration.GetSection("InauguralSync"));
+            services.Configure<DocumentDbSettings>(Configuration.GetSection("DocumentDbSettings"));
 
             services.AddSingleton<ICreateOrUpdateContactsInHubSpot>(context =>
                 new CreateOrUpdateContactsInHubSpot(
-                    new HttpJsonPost(
+                    new HttpClientFacade(
                         new HttpClient { BaseAddress = new Uri(Configuration["HubSpotApiBaseUrl"]) },
                         context.GetService<IJsonSerializer>(),
-                        context.GetService<ILogger<HttpJsonPost>>()),
+                        context.GetService<ILogger<HttpClientFacade>>()),
                     context.GetService<IClock>(),
                     context.GetService<IJsonSerializer>(),
                     context.GetService<ISleep>(),

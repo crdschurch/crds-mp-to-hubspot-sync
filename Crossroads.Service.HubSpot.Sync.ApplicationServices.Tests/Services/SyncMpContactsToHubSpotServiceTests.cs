@@ -143,8 +143,6 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Test.Services
             _dataPrepMock.Verify(prep => prep.ToBulk(It.IsAny<List<BulkSyncFailure>>()), Times.Once);
             _dataPrepMock.Verify(prep => prep.ToSerial(It.IsAny<List<BulkSyncFailure>>()), Times.Once);
             _syncActivityCleanerMock.Verify(activityCleaner => activityCleaner.CleanUp(It.IsAny<ISyncActivity>()), Times.Once);
-
-            4.Should().Be(5);
         }
     }
 }

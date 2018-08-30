@@ -46,7 +46,7 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Test.Services
 
         private static List<ContactProperty> PopulateProperties()
         {
-            return new List<ContactProperty> {new ContactProperty {Property = "email"}};
+            return new List<ContactProperty> {new ContactProperty {Name = "email"}};
         }
 
         private readonly SerialContact[] _serialContacts =

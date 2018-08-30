@@ -93,6 +93,7 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Test.Services
             _mpContactRepoMock.Setup(repo => repo.CalculateAndPersistKidsClubAndStudentMinistryAgeAndGradeDeltas()).Returns(initialChildAgeGradeDto);
             _mpContactRepoMock.Setup(repo => repo.GetAgeAndGradeGroupDataForContacts()).Returns(ageGradeGroups);
             _mpContactRepoMock.Setup(repo => repo.SetChildAgeAndGradeDeltaLogSyncCompletedUtcDate()).Returns(finalChildAgeGradeDto.SyncCompletedUtc ?? default(DateTime));
+            _hubSpotSyncerMock.Setup(syncer => syncer.BulkSync(It.IsAny<BulkContact[]>(), 1000)).Returns(new BulkSyncResult());
             _hubSpotSyncerMock.Setup(syncer => syncer.BulkSync(It.IsAny<BulkContact[]>(), 100)).Returns(new BulkSyncResult());
             _hubSpotSyncerMock.Setup(syncer => syncer.BulkSync(It.IsAny<BulkContact[]>(), 10)).Returns(new BulkSyncResult());
             _hubSpotSyncerMock.Setup(syncer => syncer.SerialCreate(It.IsAny<SerialContact[]>())).Returns(new SerialSyncResult());
@@ -128,7 +129,7 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Test.Services
 
             _mpContactRepoMock.Verify(repo => repo.CalculateAndPersistKidsClubAndStudentMinistryAgeAndGradeDeltas(), Times.Once);
             _hubSpotSyncerMock.Verify(syncer => syncer.BulkSync(It.IsAny<BulkContact[]>(), 100), Times.Once);
-            _hubSpotSyncerMock.Verify(syncer => syncer.SerialCreate(It.IsAny<SerialContact[]>()), Times.Never);
+            _hubSpotSyncerMock.Verify(syncer => syncer.SerialCreate(It.IsAny<SerialContact[]>()), Times.Once);
             _hubSpotSyncerMock.Verify(syncer => syncer.SerialUpdate(It.IsAny<SerialContact[]>()), Times.Once);
             _clockMock.Verify(clock => clock.UtcNow, Times.Exactly(8));
             _configSvcMock.Verify(svc => svc.GetCurrentJobProcessingState(), Times.Once);
@@ -140,7 +141,7 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Test.Services
             _dataPrepMock.Verify(prep => prep.Prep(It.IsAny<IList<NewlyRegisteredMpContactDto>>()), Times.Never);
             _dataPrepMock.Verify(prep => prep.Prep(It.IsAny<IDictionary<string, List<CoreUpdateMpContactDto>>>()), Times.Never);
             _dataPrepMock.Verify(prep => prep.Prep(It.IsAny<List<AgeAndGradeGroupCountsForMpContactDto>>()), Times.Once);
-            _dataPrepMock.Verify(prep => prep.ToBulk(It.IsAny<List<BulkSyncFailure>>()), Times.Once);
+            _dataPrepMock.Verify(prep => prep.ToBulk(It.IsAny<List<BulkSyncFailure>>()), Times.Exactly(2));
             _dataPrepMock.Verify(prep => prep.ToSerial(It.IsAny<List<BulkSyncFailure>>()), Times.Once);
             _syncActivityCleanerMock.Verify(activityCleaner => activityCleaner.CleanUp(It.IsAny<ISyncActivity>()), Times.Once);
         }

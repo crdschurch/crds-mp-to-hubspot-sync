@@ -210,7 +210,7 @@ More details will be available in the serial processing logs.");
                     var contact = contacts[currentContactIndex];
                     var hubSpotContact = SerialGet<HubSpotVidResult>(contact, run); // HubSpot request #1
                     run = SerialDelete(currentContactIndex, contact, hubSpotContact, contacts.Length, run); // HubSpot request #2
-                    contact.Email = contact.Properties.First(p => p.Property == "email").Value; // reset email to the existing one and re-run it
+                    contact.Email = contact.Properties.First(p => p.Name == "email").Value; // reset email to the existing one and re-run it
                     run = SerialUpdate(currentContactIndex, contact, contacts.Length, run); // HubSpot request #3
 
                     PumpTheBreaksEveryNRequestsToAvoid429Exceptions(reconciliationIteration * requestsPerReconciliation, requestsPerSecond);

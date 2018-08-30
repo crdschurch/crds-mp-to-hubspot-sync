@@ -194,9 +194,12 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
             try
             {
                 _logger.LogInformation("Starting MP contact age/grade count updates to HubSpot one-way sync operation...");
-                activity.BulkUpdateSyncResult100 = _contactSyncer.BulkSync(_dataPrep.Prep(_ministryPlatformContactRepository.GetAgeAndGradeGroupDataForContacts()), batchSize: 100);
+                activity.BulkUpdateSyncResult1000 = _contactSyncer.BulkSync(_dataPrep.Prep(_ministryPlatformContactRepository.GetAgeAndGradeGroupDataForContacts()), batchSize: 1000);
+                activity.BulkUpdateSyncResult100 = _contactSyncer.BulkSync(_dataPrep.ToBulk(activity.BulkUpdateSyncResult1000.FailedBatches), batchSize: 100);
                 activity.BulkUpdateSyncResult10 = _contactSyncer.BulkSync(_dataPrep.ToBulk(activity.BulkUpdateSyncResult100.FailedBatches), batchSize: 10);
                 activity.RetryBulkUpdateAsSerialUpdateResult = _contactSyncer.SerialUpdate(_dataPrep.ToSerial(activity.BulkUpdateSyncResult10.FailedBatches));
+                activity.SerialCreateResult = _contactSyncer.SerialCreate(activity.RetryBulkUpdateAsSerialUpdateResult.EmailAddressesDoNotExist.ToArray()); // in the event they don't yet exist but won't be picked up any other way b/c their kiddo count is the only thing to change
+
                 return activity;
             }
             catch (Exception exc)

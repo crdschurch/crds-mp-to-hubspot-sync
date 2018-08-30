@@ -2,12 +2,9 @@
 {
     /// <summary>
     /// Represents the scenario when an existing contact changed their email address.
-    /// 
-    /// Should we check for their existence first? I think so. We'll pull back the
-    /// Ministry Platform contact id and compare it to the one we're considering
-    /// updating with beforehand, so as not to overwrite a MP Head of Household's
-    /// HubSpot account with a spouse's or a child's. If there is no
-    /// MinistryPlatformContactId, we'll update and assign it.
+    /// The email address is the unique identifier in HubSpot, so it's important that we
+    /// make this distinction in our app code and handle it differently from other contact
+    /// attribute/property changes.
     /// </summary>
     public class EmailAddressChangedContact : SerialContact
     {

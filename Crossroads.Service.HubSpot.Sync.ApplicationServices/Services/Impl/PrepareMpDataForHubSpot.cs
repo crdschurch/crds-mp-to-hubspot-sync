@@ -33,11 +33,11 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
                 var containsEmailAddressChange = contactKeyValue.Value.Exists(update => update.PropertyName.Equals("email", StringComparison.OrdinalIgnoreCase));
                 if (containsEmailAddressChange == false) // MP audit log does NOT contain email address in contact's manifest of changes
                 {
-                    contacts.Add(_mapper.Map<NonEmailAttributesChangedContact>(contactKeyValue.Value));
+                    contacts.Add(_mapper.Map<NonEmailAttributesChangedContact>(contactKeyValue.Value.First()));
                     continue;
                 }
 
-                contacts.Add(_mapper.Map<EmailAddressChangedContact>(contactKeyValue.Value));
+                contacts.Add(_mapper.Map<EmailAddressChangedContact>(contactKeyValue.Value.First(dto => dto.PropertyName.Equals("email", StringComparison.OrdinalIgnoreCase))));
             }
 
             return contacts.ToArray();

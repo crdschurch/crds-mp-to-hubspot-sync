@@ -24,9 +24,9 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services
     /// 7) Mobile Phone
     /// 8) Postal/Zip Code
     /// </summary>
-    public interface IPrepareDataForHubSpot
+    public interface IPrepareMpDataForHubSpot
     {
-        BulkContact[] Prep(IList<NewlyRegisteredMpContactDto> newContacts);
+        SerialContact[] Prep(IList<NewlyRegisteredMpContactDto> newContacts);
 
         SerialContact[] Prep(IDictionary<string, List<CoreUpdateMpContactDto>> contactUpdates);
 

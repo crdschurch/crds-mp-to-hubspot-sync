@@ -112,8 +112,8 @@ namespace Crossroads.Service.HubSpot.Sync.App.Controllers
                         $@"Last successful sync dates<br/>
                         Registration: {dates.RegistrationSyncDate.ToLocalTime()}<br/>
                         Core update: {dates.CoreUpdateSyncDate.ToLocalTime()}<br />
-                        Age/Grade process date: {dates.AgeAndGradeProcessDate}<br />
-                        Age/Grade sync date: {dates.AgeAndGradeSyncDate}",
+                        Age/Grade process date: {dates.AgeAndGradeProcessDate.ToLocalTime()}<br />
+                        Age/Grade sync date: {dates.AgeAndGradeSyncDate.ToLocalTime()}",
                         "text/html");
                 }
                 catch (Exception exc)

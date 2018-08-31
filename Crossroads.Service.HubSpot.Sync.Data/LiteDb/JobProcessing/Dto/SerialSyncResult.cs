@@ -9,6 +9,7 @@ namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto
         public SerialSyncResult()
         {
             EmailAddressesAlreadyExist = new List<SerialContact>();
+            EmailAddressesDoNotExist = new List<SerialContact>();
             Failures = new List<SerialSyncFailure>();
         }
 
@@ -16,6 +17,7 @@ namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto
         {
             Execution = new ExecutionTime(executionStartTime);
             EmailAddressesAlreadyExist = new List<SerialContact>();
+            EmailAddressesDoNotExist = new List<SerialContact>();
             Failures = new List<SerialSyncFailure>();
         }
 
@@ -36,5 +38,13 @@ namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto
         public int FailureCount { get; set; }
 
         public List<SerialSyncFailure> Failures { get; set; }
+
+        public int EmailAddressDoesNotExistCount { get; set; }
+
+        public List<SerialContact> EmailAddressesDoNotExist { get; set; }
+
+        public int DeleteCount { get; set; }
+
+        public int GetCount { get; set; }
     }
 }

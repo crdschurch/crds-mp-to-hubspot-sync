@@ -4,13 +4,29 @@ namespace Crossroads.Service.HubSpot.Sync.Data.MP.Dto
     /// <summary>
     /// Kids Club and Student Ministry Age and Grade 
     /// </summary>
-    public class AgeAndGradeGroupCountsForMpContactDto : IDeveloperIntegrationProperties, IAgeGradeContactProperties
+    public class AgeAndGradeGroupCountsForMpContactDto : IDeveloperIntegrationProperties, ICoreContactProperties, IAgeGradeContactProperties
     {
         public string MinistryPlatformContactId { get; set; }
 
+        public string Source => "MP_Sync_Kids_Club_&_Student_Ministry_Update";
+
         public string Email { get; set; }
 
-        public string Source => "MP_Sync_Kids_Club_&_Student_Ministry_Update";
+        public string Firstname { get; set; }
+
+        public string Lastname { get; set; }
+
+        public string Marital_Status { get; set; }
+
+        public string Gender { get; set; }
+
+        public string Community { get; set; }
+
+        public string Phone { get; set; }
+
+        public string MobilePhone { get; set; }
+
+        public string Zip { get; set; }
 
         public int Number_of_Infants { get; set; }
 

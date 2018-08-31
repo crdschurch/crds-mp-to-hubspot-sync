@@ -7,15 +7,15 @@ create or alter procedure dbo.api_crds_get_newly_registered_mp_contacts_for_hubs
 as
 
     select              MinistryPlatformContactId,
-                        Email, -- switched to dp_Users.User_Name based on dbo.crds_service_update_email_nightly
+                        Email,
                         Firstname,
                         Lastname,
                         Community,
                         Marital_Status,
                         Gender,
-                        Phone,         -- HS internal id (lower case)
-                        MobilePhone,   -- HS internal id (lower case)
-                        Zip,           -- HS internal id (lower case)
+                        Phone,
+                        MobilePhone,
+                        Zip,
                         Number_of_Infants,
                         Number_of_1_Year_Olds,
                         Number_of_2_Year_Olds,

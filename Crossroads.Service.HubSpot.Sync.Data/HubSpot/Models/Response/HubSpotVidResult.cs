@@ -2,7 +2,7 @@
 
 namespace Crossroads.Service.HubSpot.Sync.Data.HubSpot.Models.Response
 {
-    public class HubSpotSerialResult
+    public class HubSpotVidResult : IHubSpotContactResult
     {
         /// <summary>
         /// No CLUE what the "v" in vid stands for, but
@@ -10,12 +10,5 @@ namespace Crossroads.Service.HubSpot.Sync.Data.HubSpot.Models.Response
         /// </summary>
         [JsonProperty(PropertyName = "vid")]
         public int ContactVid { get; set; }
-
-        /// <summary>
-        /// Whether or not the contact was created with the
-        /// related action or updated.
-        /// </summary>
-        [JsonProperty(PropertyName = "isNew")]
-        public bool IsNew { get; set; }
     }
 }

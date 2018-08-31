@@ -6,7 +6,7 @@ namespace Crossroads.Service.HubSpot.Sync.Data.HubSpot.Models.Request
     public class ContactProperty
     {
         [JsonProperty(PropertyName = "property")]
-        public string Property { get; set; }
+        public string Name { get; set; }
 
         [JsonProperty(PropertyName = "value")]
         public string Value { get; set; }
@@ -15,7 +15,7 @@ namespace Crossroads.Service.HubSpot.Sync.Data.HubSpot.Models.Request
         {
             if (obj is ContactProperty contactProperty)
             {
-                return Property.Equals(contactProperty.Property, StringComparison.InvariantCulture);
+                return Name.Equals(contactProperty.Name, StringComparison.InvariantCulture);
             }
 
             return false;
@@ -23,7 +23,7 @@ namespace Crossroads.Service.HubSpot.Sync.Data.HubSpot.Models.Request
 
         public override int GetHashCode()
         {
-            return StringComparer.InvariantCulture.GetHashCode(Property);
+            return StringComparer.InvariantCulture.GetHashCode(Name);
         }
     }
 }

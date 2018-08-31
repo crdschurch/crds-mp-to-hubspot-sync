@@ -49,10 +49,14 @@ namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto
 
         public ChildAgeAndGradeDeltaLogDto AgeAndGradeDelta { get; set; }
 
+        public BulkSyncResult BulkUpdateSyncResult1000 { get; set; }
+
         public BulkSyncResult BulkUpdateSyncResult100 { get; set; }
 
         public BulkSyncResult BulkUpdateSyncResult10 { get; set; }
 
         public SerialSyncResult RetryBulkUpdateAsSerialUpdateResult { get; set; }
+
+        public SerialSyncResult SerialCreateResult { get; set; }
     }
 }

@@ -6,7 +6,7 @@
     /// dbo.api_crds_get_mp_contact_updates_for_hubspot. When this is true, the mapping from this
     /// instance to a HubSpot-bound DTO will happen automagically (thanks to a smidge of reflection).
     /// </summary>
-    interface IAgeGradeContactProperties
+    public interface IAgeGradeContactProperties
     {
         int Number_of_Infants { get; set; }
 

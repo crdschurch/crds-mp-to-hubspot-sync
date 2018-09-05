@@ -7,7 +7,7 @@ namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto
     /// First name, Last name, Email, Community, Marital Status. It also
     /// captures results (stats, errors, etc) around the sync operation.
     /// </summary>
-    public interface ISyncActivityCoreUpdateOperation
+    public interface ISyncActivityOperation
     {
         IExecutionTime Execution { get; }
 
@@ -17,20 +17,30 @@ namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto
 
         int SuccessCount { get; }
 
-        int InitialSuccessCount { get; }
+        int FailureCount { get; }
 
-        int RetrySuccessCount { get; }
+        int UpdateSuccessCount { get; }
 
-        int InitialFailureCount { get; }
+        int CreateSuccessCount { get; }
 
-        int RetryFailureCount { get; }
+        int ReconciliationSuccessCount { get; }
+
+        int UpdateFailureCount { get; }
+
+        int CreateFailureCount { get; }
+
+        int ReconciliationFailureCount { get; }
 
         int EmailAddressAlreadyExistsCount { get; }
+
+        int EmailAddressDoesNotExistCount { get; }
 
         int HubSpotApiRequestCount { get; }
 
         SerialSyncResult SerialUpdateResult { get; set; }
 
-        SerialSyncResult RetryEmailExistsAsSerialUpdateResult { get; set; }
+        SerialSyncResult SerialCreateResult { get; set; }
+
+        SerialSyncResult SerialReconciliationResult { get; set; }
     }
 }

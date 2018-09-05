@@ -35,14 +35,7 @@ namespace Crossroads.Service.HubSpot.Sync.Data.MP.Impl
 
             try
             {
-                var token = _apiUserRepository.GetDefaultApiUserToken();
-                var data = _mpRestBuilder.NewRequestBuilder()
-                    .WithAuthenticationToken(token)
-                    .Build()
-                    .ExecuteStoredProc<JObject>(storedProcedureName, new Dictionary<string, object>()).FirstOrDefault();
-                // unwraps/accommodates SQL Server's ability return multiple result sets in a single query represented as a list of lists
-
-                var result = data?.Select(jObject => _jsonSerializer.ToObject<ChildAgeAndGradeDeltaLogDto>(jObject)).First();
+                var result = FetchData(storedProcedureName)?.Select(jObject => _jsonSerializer.ToObject<ChildAgeAndGradeDeltaLogDto>(jObject)).First();
                 Log(result);
 
                 return result;
@@ -61,14 +54,8 @@ namespace Crossroads.Service.HubSpot.Sync.Data.MP.Impl
 
             try
             {
-                var token = _apiUserRepository.GetDefaultApiUserToken();
-                var data = _mpRestBuilder.NewRequestBuilder()
-                    .WithAuthenticationToken(token)
-                    .Build()
-                    .ExecuteStoredProc<JObject>(storedProcedureName, new Dictionary<string, object>()).FirstOrDefault();
-
-                var updates = data?.Select(jObject => _jsonSerializer.ToObject<AgeAndGradeGroupCountsForMpContactDto>(jObject)).ToList()
-                                    ?? Enumerable.Empty<AgeAndGradeGroupCountsForMpContactDto>().ToList();
+                var updates = FetchData(storedProcedureName)?.Select(jObject => _jsonSerializer.ToObject<AgeAndGradeGroupCountsForMpContactDto>(jObject)).ToList()
+                              ?? Enumerable.Empty<AgeAndGradeGroupCountsForMpContactDto>().ToList();
 
                 _logger.LogInformation($"Number of age and group updates fetched from MP: {updates.Count}");
 
@@ -88,13 +75,7 @@ namespace Crossroads.Service.HubSpot.Sync.Data.MP.Impl
 
             try
             {
-                var token = _apiUserRepository.GetDefaultApiUserToken();
-                var data = _mpRestBuilder.NewRequestBuilder()
-                    .WithAuthenticationToken(token)
-                    .Build()
-                    .ExecuteStoredProc<JObject>(storedProcedureName, new Dictionary<string, object>()).FirstOrDefault();
-
-                var result = data?.Select(jObject => _jsonSerializer.ToObject<ChildAgeAndGradeDeltaLogDto>(jObject)).First();
+                var result = FetchData(storedProcedureName)?.Select(jObject => _jsonSerializer.ToObject<ChildAgeAndGradeDeltaLogDto>(jObject)).First();
                 Log(result);
 
                 return result.SyncCompletedUtc.Value; // prefer the exception as this *should* not happen
@@ -108,23 +89,16 @@ namespace Crossroads.Service.HubSpot.Sync.Data.MP.Impl
 
         public IList<NewlyRegisteredMpContactDto> GetNewlyRegisteredContacts(DateTime lastSuccessfulSyncDateUtc)
         {
-            const string storedProcName = "api_crds_get_newly_registered_mp_contacts_for_hubspot";
+            const string storedProcedureName = "api_crds_get_newly_registered_mp_contacts_for_hubspot";
             var lastSuccessfulSyncDateLocal = lastSuccessfulSyncDateUtc.ToLocalTime();
-            Log(storedProcName, lastSuccessfulSyncDateLocal, "Fetching newly registered contacts from MP via stored proc.");
+            Log(storedProcedureName, lastSuccessfulSyncDateLocal, "Fetching newly registered contacts from MP via stored proc.");
 
             try
             {
-                var token = _apiUserRepository.GetDefaultApiUserToken(); // dbo.Participants.Participant_Start_Date stores "local" datetime
                 var parameters = new Dictionary<string, object> { { "@LastSuccessfulSyncDate", lastSuccessfulSyncDateLocal } };
-                var data = _mpRestBuilder.NewRequestBuilder()
-                    .WithAuthenticationToken(token)
-                    .Build()
-                    .ExecuteStoredProc<JObject>(storedProcName, parameters)
-                    .FirstOrDefault(); // unwraps/accommodates SQL Server's ability return multiple result sets in a single query...
-                                       // ...represented as a list of lists
-
+                var data = FetchData(storedProcedureName, parameters);
                 var contacts = data?.Select(jObject => _jsonSerializer.ToObject<NewlyRegisteredMpContactDto>(jObject)).ToList()
-                    ?? Enumerable.Empty<NewlyRegisteredMpContactDto>().ToList();
+                               ?? Enumerable.Empty<NewlyRegisteredMpContactDto>().ToList();
 
                 _logger.LogInformation($"Number of newly registered MP contacts fetched: {contacts.Count}");
 
@@ -144,24 +118,15 @@ namespace Crossroads.Service.HubSpot.Sync.Data.MP.Impl
 
             try
             {
-                var token = _apiUserRepository.GetDefaultApiUserToken(); // dp_Audit_Logs.Date_Time stores Utc
                 var parameters = new Dictionary<string, object> { { "@LastSuccessfulSyncDateUtc", lastSuccessfulSyncDateUtc } };
-                var data = _mpRestBuilder.NewRequestBuilder()
-                    .WithAuthenticationToken(token)
-                    .Build()
-                    .ExecuteStoredProc<JObject>(storedProcedureName, parameters)
-                    .FirstOrDefault(); // unwraps/accommodates SQL Server's ability return multiple result sets in a single query...
-                                       // ...represented as a list of lists
-
+                var data = FetchData(storedProcedureName, parameters);
                 var columnUpdates = data?.Select(jObject => _jsonSerializer.ToObject<CoreUpdateMpContactDto>(jObject)).ToList()
                                     ?? Enumerable.Empty<CoreUpdateMpContactDto>().ToList();
 
+                var contactColumnUpdates = columnUpdates.GroupBy(key => key.MinistryPlatformContactId, value => value)
+                                                        .ToDictionary(keySelector => keySelector.Key, values => values.ToList());
+
                 _logger.LogInformation($"Number of column updates fetched from MP: {columnUpdates.Count}");
-
-                var contactColumnUpdates =
-                    columnUpdates.GroupBy(key => key.MinistryPlatformContactId, value => value)
-                        .ToDictionary(keySelector => keySelector.Key, values => values.ToList());
-
                 _logger.LogInformation($"Number of contacts to update in HubSpot: {contactColumnUpdates.Count}");
 
                 return contactColumnUpdates;
@@ -171,6 +136,16 @@ namespace Crossroads.Service.HubSpot.Sync.Data.MP.Impl
                 _logger.LogError("An exception occurred while fetching Ministry Platform core contact updates.", exc);
                 throw;
             }
+        }
+
+        private List<JObject> FetchData(string storedProcedureName, Dictionary<string, object> storedProcedureParameters = null)
+        {
+            var token = _apiUserRepository.GetDefaultApiClientToken(); // dp_Audit_Logs.Date_Time stores Utc
+            return _mpRestBuilder.NewRequestBuilder()
+                .WithAuthenticationToken(token)
+                .Build()
+                .ExecuteStoredProc<JObject>(storedProcedureName, storedProcedureParameters ?? new Dictionary<string, object>())
+                .FirstOrDefault(); // unwraps/accommodates SQL Server's ability return multiple result sets in a single query represented as a list of lists
         }
 
         private void Log(string storedProcedureName, DateTime lastSuccessfulSyncDate, string logMessage)

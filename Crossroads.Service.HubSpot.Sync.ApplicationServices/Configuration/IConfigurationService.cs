@@ -10,5 +10,7 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Configuration
         SyncProcessingState GetCurrentJobProcessingState();
 
         string GetEnvironmentName();
+
+        bool PersistActivity();
     }
 }

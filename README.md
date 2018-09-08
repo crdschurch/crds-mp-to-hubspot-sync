@@ -1,4 +1,4 @@
-# crds-mp-hubspot-sync
+# crds-mp-to-hubspot-sync
 
 Syncs newly registered Ministry Platform (MP) contacts, core MP contact attribute updates and child Student Ministry & Kids Club age/grade data to HubSpot.
 

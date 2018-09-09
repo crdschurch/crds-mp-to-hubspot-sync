@@ -52,69 +52,100 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
         public async Task<ISyncActivity> Sync()
         {
             ISyncActivity syncJob = new SyncActivity(_clock.UtcNow);
-            var syncState = default(SyncProcessingState);
+            var syncProgress = default(SyncProgress);
 
             _logger.LogInformation("Starting MP to HubSpot one-way sync operations (create new registrations first, followed by 2 update operations).");
             try
             {
-                syncState = _configurationService.GetCurrentJobProcessingState();
-                if (syncState == SyncProcessingState.Processing)
+                syncProgress = _configurationService.GetCurrentSyncProgress();
+                if (syncProgress.SyncState == SyncState.Processing)
                 {
                     _logger.LogWarning("Job is already currently processing.");
                     return syncJob;
                 }
 
                 // set job processing state; get last successful sync dates
-                syncState = _jobRepository.SetSyncJobProcessingState(SyncProcessingState.Processing);
+                syncProgress = new SyncProgress {SyncState = SyncState.Processing};
+                _jobRepository.SetSyncProgress(syncProgress);
                 var syncDates = syncJob.PreviousSyncDates = _configurationService.GetLastSuccessfulSyncDates();
                 var ageGradeDeltaLog = default(ChildAgeAndGradeDeltaLogDto);
 
                 Util.TryCatchSwallow(() => { // running this in advance of the create process with the express purpose of avoiding create/update race conditions when we consume the results for update
+                    PersistSyncProgress(syncProgress, SyncStepName.AgeGradeDataCalculationInMp, SyncStepState.Processing);
                     ageGradeDeltaLog = _ministryPlatformContactRepository.CalculateAndPersistKidsClubAndStudentMinistryAgeAndGradeDeltas();
+                    PersistSyncProgress(syncProgress, SyncStepName.AgeGradeDataSync, ageGradeDeltaLog.InsertCount + ageGradeDeltaLog.UpdateCount);
                     syncDates.AgeAndGradeProcessDate = ageGradeDeltaLog.ProcessedUtc;
                     syncDates.AgeAndGradeSyncDate = ageGradeDeltaLog.SyncCompletedUtc ?? default(DateTime); // go ahead and set in case there's nothing to do
-                    _jobRepository.SetLastSuccessfulSyncDates(syncDates);
-                }, () => _logger.LogWarning("Age/grade calculation and persistence operation aborted."));
+                    _jobRepository.PersistLastSuccessfulSyncDates(syncDates);
+                    PersistSyncProgress(syncProgress, SyncStepName.AgeGradeDataCalculationInMp, SyncStepState.Completed);
+                }, () => {
+                    _logger.LogWarning("Age/grade calculation and persistence operation aborted.");
+                    PersistSyncProgress(syncProgress, SyncStepName.AgeGradeDataCalculationInMp, SyncStepState.Aborted);
+                });
 
-                Util.TryCatchSwallow(() => { // create contacts
-                    syncJob.NewRegistrationOperation = SyncNewRegistrations(syncJob.PreviousSyncDates.RegistrationSyncDate);
+                Util.TryCatchSwallow(() => { // sync newly registered contacts to hubspot
+                    PersistSyncProgress(syncProgress, SyncStepName.NewContactRegistrationSync, SyncStepState.Processing);
+                    syncJob.NewRegistrationOperation = SyncNewRegistrations(syncJob.PreviousSyncDates.RegistrationSyncDate, syncProgress);
                     if (_syncActivityValidator.Validate(syncJob, ruleSet: RuleSetName.Registration).IsValid)
                     {
                         syncDates.RegistrationSyncDate = syncJob.NewRegistrationOperation.Execution.StartUtc;
-                        _jobRepository.SetLastSuccessfulSyncDates(syncDates);
+                        _jobRepository.PersistLastSuccessfulSyncDates(syncDates);
+                        PersistSyncProgress(syncProgress, SyncStepName.NewContactRegistrationSync, SyncStepState.Completed);
                     }
-                }, () => _logger.LogWarning("Sync new registrations operation aborted."));
+                    else
+                        PersistSyncProgress(syncProgress, SyncStepName.NewContactRegistrationSync, SyncStepState.CompletedButWithIssues);
+                }, () => {
+                    _logger.LogWarning("Sync new registrations operation aborted.");
+                    PersistSyncProgress(syncProgress, SyncStepName.NewContactRegistrationSync, SyncStepState.Aborted);
+                });
 
-                Util.TryCatchSwallow(() => { // update core contact properties
-                    syncJob.CoreUpdateOperation = SyncCoreUpdates(syncJob.PreviousSyncDates.CoreUpdateSyncDate);
+                Util.TryCatchSwallow(() => { // sync core contact property updates to hubspot
+                    PersistSyncProgress(syncProgress, SyncStepName.CoreContactAttributeUpdateSync, SyncStepState.Processing);
+                    syncJob.CoreUpdateOperation = SyncCoreUpdates(syncJob.PreviousSyncDates.CoreUpdateSyncDate, syncProgress);
                     if (_syncActivityValidator.Validate(syncJob, ruleSet: RuleSetName.CoreUpdate).IsValid)
                     {
                         syncDates.CoreUpdateSyncDate = syncJob.CoreUpdateOperation.Execution.StartUtc;
-                        _jobRepository.SetLastSuccessfulSyncDates(syncDates);
+                        _jobRepository.PersistLastSuccessfulSyncDates(syncDates);
+                        PersistSyncProgress(syncProgress, SyncStepName.CoreContactAttributeUpdateSync, SyncStepState.Completed);
                     }
-                }, () => _logger.LogWarning("Sync core updates operation aborted."));
+                    else
+                        PersistSyncProgress(syncProgress, SyncStepName.CoreContactAttributeUpdateSync, SyncStepState.CompletedButWithIssues);
+                }, () => {
+                    _logger.LogWarning("Sync core updates operation aborted.");
+                    PersistSyncProgress(syncProgress, SyncStepName.CoreContactAttributeUpdateSync, SyncStepState.Aborted);
+                });
 
-                // sync age and grade data to hubspot contacts
-                syncJob.ChildAgeAndGradeUpdateOperation = SyncChildAgeAndGradeData(ageGradeDeltaLog, syncJob.PreviousSyncDates.AgeAndGradeSyncDate);
-                if (_syncActivityValidator.Validate(syncJob, ruleSet: RuleSetName.AgeGradeUpdate).IsValid)
-                {
-                    ageGradeDeltaLog.SyncCompletedUtc = syncDates.AgeAndGradeSyncDate = _ministryPlatformContactRepository.SetChildAgeAndGradeDeltaLogSyncCompletedUtcDate();
-                    _jobRepository.SetLastSuccessfulSyncDates(syncDates);
-                }
+                Util.TryCatchSwallow(() => { // sync age/grade data to hubspot contacts
+                    PersistSyncProgress(syncProgress, SyncStepName.AgeGradeDataSync, SyncStepState.Processing);
+                    syncJob.ChildAgeAndGradeUpdateOperation = SyncChildAgeAndGradeData(ageGradeDeltaLog, syncJob.PreviousSyncDates.AgeAndGradeSyncDate);
+                    if (_syncActivityValidator.Validate(syncJob, ruleSet: RuleSetName.AgeGradeUpdate).IsValid)
+                    {
+                        if(ageGradeDeltaLog.InsertCount > 0 || ageGradeDeltaLog.UpdateCount > 0)
+                            ageGradeDeltaLog.SyncCompletedUtc = syncDates.AgeAndGradeSyncDate = _ministryPlatformContactRepository.SetChildAgeAndGradeDeltaLogSyncCompletedUtcDate();
+                        _jobRepository.PersistLastSuccessfulSyncDates(syncDates);
+                        PersistSyncProgress(syncProgress, SyncStepName.AgeGradeDataSync, SyncStepState.Completed);
+                    }
+                    else
+                        PersistSyncProgress(syncProgress, SyncStepName.AgeGradeDataSync, SyncStepState.CompletedButWithIssues);
+                }, () => {
+                    _logger.LogWarning("Sync age/grade data operation aborted.");
+                    PersistSyncProgress(syncProgress, SyncStepName.AgeGradeDataSync, SyncStepState.Aborted);
+                });
 
-                // reset sync job processing state
-                syncState = _jobRepository.SetSyncJobProcessingState(SyncProcessingState.Idle);
+                // reset sync job state
+                PersistSyncProgress(syncProgress, SyncState.Idle);
+
                 return syncJob;
             }
             catch (Exception exc)
             {
                 _logger.LogError(CoreEvent.Exception, exc, "An exception occurred while syncing MP contacts to HubSpot.");
-                syncState = _jobRepository.SetSyncJobProcessingState(SyncProcessingState.Idle);
+                PersistSyncProgress(syncProgress, SyncState.Idle);
                 throw;
             }
             finally // *** ALWAYS *** capture the activity, even if the job is already processing or an exception occurs
             {
-                syncJob.SyncProcessingState = syncState;
+                syncJob.SyncProgress = syncProgress;
                 syncJob.Execution.FinishUtc = _clock.UtcNow;
                 _syncActivityCleaner.CleanUp(syncJob);
                 if(_configurationService.PersistActivity())
@@ -127,7 +158,7 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
         /// Handles create, update and reconciliation scenarios for MP CRM contacts identified as new registrants that ought to exist
         /// in the HubSpot CRM.
         /// </summary>
-        private ISyncActivityOperation SyncNewRegistrations(DateTime lastSuccessfulSyncDate)
+        private ISyncActivityOperation SyncNewRegistrations(DateTime lastSuccessfulSyncDate, SyncProgress syncProgress)
         {
             var activity = new SyncActivityOperation(_clock.UtcNow) {PreviousSyncDate = lastSuccessfulSyncDate};
 
@@ -135,6 +166,7 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
             {
                 _logger.LogInformation("Starting new MP registrations to HubSpot one-way sync operation...");
                 var newContacts = _ministryPlatformContactRepository.GetNewlyRegisteredContacts(lastSuccessfulSyncDate); // talk to MP
+                PersistSyncProgress(syncProgress, SyncStepName.NewContactRegistrationSync, newContacts.Count);
                 activity.SerialCreateResult = _contactSyncer.SerialCreate(_dataPrep.Prep(newContacts)); // create in HubSpot
                 activity.SerialUpdateResult = _contactSyncer.SerialUpdate(activity.SerialCreateResult.EmailAddressesAlreadyExist.ToArray()); // update in HubSpot
                 activity.SerialReconciliationResult = _contactSyncer.ReconcileConflicts(activity.SerialUpdateResult.EmailAddressesAlreadyExist.ToArray());
@@ -157,7 +189,7 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
         /// Capable of accommodating email address (unique identifier in HubSpot) change and other core contact attribute/property updates.
         /// Can also create a contact if it does not exist.
         /// </summary>
-        private ISyncActivityOperation SyncCoreUpdates(DateTime lastSuccessfulSyncDate)
+        private ISyncActivityOperation SyncCoreUpdates(DateTime lastSuccessfulSyncDate, SyncProgress syncProgress)
         {
             var activity = new SyncActivityOperation(_clock.UtcNow) { PreviousSyncDate = lastSuccessfulSyncDate };
 
@@ -165,6 +197,7 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
             {
                 _logger.LogInformation("Starting MP contact core updates to HubSpot one-way sync operation...");
                 var updates = _dataPrep.Prep(_ministryPlatformContactRepository.GetAuditedContactUpdates(lastSuccessfulSyncDate));
+                PersistSyncProgress(syncProgress, SyncStepName.CoreContactAttributeUpdateSync, updates.Length);
                 activity.SerialUpdateResult = _contactSyncer.SerialUpdate(updates);
                 activity.SerialCreateResult = _contactSyncer.SerialCreate(activity.SerialUpdateResult.EmailAddressesDoNotExist.ToArray());
                 activity.SerialReconciliationResult = _contactSyncer.ReconcileConflicts(activity.SerialUpdateResult.EmailAddressesAlreadyExist.ToArray());
@@ -212,6 +245,24 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
                 activity.Execution.FinishUtc = _clock.UtcNow;
                 _jobRepository.SaveHubSpotApiDailyRequestCount(activity.HubSpotApiRequestCount, activity.Execution.StartUtc);
             }
+        }
+
+        private void PersistSyncProgress(SyncProgress syncProgress, SyncStepName stepName, SyncStepState stepState)
+        {
+            syncProgress.Steps[stepName].StepState = stepState;
+            _jobRepository.SetSyncProgress(syncProgress);
+        }
+
+        private void PersistSyncProgress(SyncProgress syncProgress, SyncStepName stepName, int numberOfContactsToSync)
+        {
+            syncProgress.Steps[stepName].NumberOfContactsToSync = numberOfContactsToSync;
+            _jobRepository.SetSyncProgress(syncProgress);
+        }
+
+        private void PersistSyncProgress(SyncProgress syncProgress, SyncState state)
+        {
+            syncProgress.SyncState = state;
+            _jobRepository.SetSyncProgress(syncProgress);
         }
     }
 }

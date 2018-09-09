@@ -1,7 +1,8 @@
 ﻿using Crossroads.Service.HubSpot.Sync.Data.MP.Dto;
 using System;
+using Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto;
 
-namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto
+namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing
 {
     /// <summary>
     /// Represents the activity for updating Kids Club and Student Ministry HubSpot properties:

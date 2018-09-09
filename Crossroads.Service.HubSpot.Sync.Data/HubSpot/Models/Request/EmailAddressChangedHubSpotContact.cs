@@ -6,7 +6,7 @@
     /// make this distinction in our app code and handle it differently from other contact
     /// attribute/property changes.
     /// </summary>
-    public class EmailAddressChangedContact : SerialContact
+    public class EmailAddressChangedHubSpotContact : SerialHubSpotContact
     {
     }
 }

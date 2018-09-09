@@ -1,5 +1,4 @@
-﻿using Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Enum;
-using LiteDB;
+﻿using LiteDB;
 using System;
 
 namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto
@@ -60,6 +59,6 @@ namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto
 
         public ISyncActivityChildAgeAndGradeUpdateOperation ChildAgeAndGradeUpdateOperation { get; set; }
 
-        public SyncProcessingState SyncProcessingState { get; set; }
+        public SyncProgress SyncProgress { get; set; }
     }
 }

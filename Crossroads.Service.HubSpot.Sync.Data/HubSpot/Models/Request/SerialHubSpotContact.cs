@@ -3,11 +3,12 @@ using Newtonsoft.Json;
 
 namespace Crossroads.Service.HubSpot.Sync.Data.HubSpot.Models.Request
 {
-    public interface IContact
+    public class SerialHubSpotContact : IHubSpotContact
     {
-        string Email { get; set; }
+        [JsonIgnore]
+        public string Email { get; set; }
 
         [JsonProperty(PropertyName = "properties")]
-        List<ContactProperty> Properties { get; set; }
+        public List<HubSpotContactProperty> Properties { get; set; }
     }
 }

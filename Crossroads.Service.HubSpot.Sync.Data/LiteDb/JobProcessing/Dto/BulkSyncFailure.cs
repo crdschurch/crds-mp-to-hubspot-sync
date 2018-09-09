@@ -14,6 +14,6 @@ namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto
 
         public int BatchNumber { get; set; }
 
-        public BulkContact[] Contacts { get; set; }
+        public BulkHubSpotContact[] HubSpotContacts { get; set; }
     }
 }

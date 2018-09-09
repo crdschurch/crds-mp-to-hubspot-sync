@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto
+namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing
 {
     public interface IExecutionTime
     {

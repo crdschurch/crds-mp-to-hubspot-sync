@@ -93,23 +93,23 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Test.Services
             _mpContactRepoMock.Setup(repo => repo.CalculateAndPersistKidsClubAndStudentMinistryAgeAndGradeDeltas()).Returns(initialChildAgeGradeDto);
             _mpContactRepoMock.Setup(repo => repo.GetAgeAndGradeGroupDataForContacts()).Returns(ageGradeGroups);
             _mpContactRepoMock.Setup(repo => repo.SetChildAgeAndGradeDeltaLogSyncCompletedUtcDate()).Returns(finalChildAgeGradeDto.SyncCompletedUtc ?? default(DateTime));
-            _hubSpotSyncerMock.Setup(syncer => syncer.BulkSync(It.IsAny<BulkContact[]>(), 1000)).Returns(new BulkSyncResult());
-            _hubSpotSyncerMock.Setup(syncer => syncer.BulkSync(It.IsAny<BulkContact[]>(), 100)).Returns(new BulkSyncResult());
-            _hubSpotSyncerMock.Setup(syncer => syncer.BulkSync(It.IsAny<BulkContact[]>(), 10)).Returns(new BulkSyncResult());
-            _hubSpotSyncerMock.Setup(syncer => syncer.SerialCreate(It.IsAny<SerialContact[]>())).Returns(new SerialSyncResult());
-            _hubSpotSyncerMock.Setup(syncer => syncer.SerialUpdate(It.IsAny<SerialContact[]>())).Returns(new SerialSyncResult());
+            _hubSpotSyncerMock.Setup(syncer => syncer.BulkSync(It.IsAny<BulkHubSpotContact[]>(), 1000)).Returns(new BulkSyncResult());
+            _hubSpotSyncerMock.Setup(syncer => syncer.BulkSync(It.IsAny<BulkHubSpotContact[]>(), 100)).Returns(new BulkSyncResult());
+            _hubSpotSyncerMock.Setup(syncer => syncer.BulkSync(It.IsAny<BulkHubSpotContact[]>(), 10)).Returns(new BulkSyncResult());
+            _hubSpotSyncerMock.Setup(syncer => syncer.SerialCreate(It.IsAny<SerialHubSpotContact[]>())).Returns(new SerialSyncResult());
+            _hubSpotSyncerMock.Setup(syncer => syncer.SerialUpdate(It.IsAny<SerialHubSpotContact[]>())).Returns(new SerialSyncResult());
             _clockMock.Setup(clock => clock.UtcNow).Returns(utcNowMockDateTime);
-            _configSvcMock.Setup(svc => svc.GetCurrentJobProcessingState()).Returns(SyncProcessingState.Idle);
+            _configSvcMock.Setup(svc => svc.GetCurrentSyncProgress()).Returns(new SyncProgress { SyncState = SyncState.Idle});
             _configSvcMock.Setup(svc => svc.GetLastSuccessfulSyncDates()).Returns(syncDates);
             _configSvcMock.Setup(svc => svc.PersistActivity()).Returns(true);
-            _jobRepoMock.Setup(repo => repo.SetSyncJobProcessingState(It.IsAny<SyncProcessingState>())).Returns<SyncProcessingState>(x => x);
-            _jobRepoMock.Setup(repo => repo.SetLastSuccessfulSyncDates(It.IsAny<SyncDates>())).Returns<SyncDates>(x => x);
+            _jobRepoMock.Setup(repo => repo.SetSyncProgress(It.IsAny<SyncProgress>()));
+            _jobRepoMock.Setup(repo => repo.PersistLastSuccessfulSyncDates(It.IsAny<SyncDates>())).Returns<SyncDates>(x => x);
             _jobRepoMock.Setup(repo => repo.SaveHubSpotApiDailyRequestCount(It.IsAny<int>(), It.IsAny<DateTime>())).Returns(true);
             _jobRepoMock.Setup(repo => repo.SaveSyncActivity(It.IsAny<ISyncActivity>())).Returns(true);
-            _dataPrepMock.Setup(prep => prep.Prep(It.IsAny<IDictionary<string, List<CoreUpdateMpContactDto>>>())).Returns(new SerialContact[0]);
-            _dataPrepMock.Setup(prep => prep.Prep(It.IsAny<List<AgeAndGradeGroupCountsForMpContactDto>>())).Returns(new BulkContact[0]);
-            _dataPrepMock.Setup(prep => prep.ToBulk(It.IsAny<List<BulkSyncFailure>>())).Returns(new BulkContact[0]);
-            _dataPrepMock.Setup(prep => prep.ToSerial(It.IsAny<List<BulkSyncFailure>>())).Returns(new SerialContact[0]);
+            _dataPrepMock.Setup(prep => prep.Prep(It.IsAny<IDictionary<string, List<CoreUpdateMpContactDto>>>())).Returns(new SerialHubSpotContact[0]);
+            _dataPrepMock.Setup(prep => prep.Prep(It.IsAny<List<AgeAndGradeGroupCountsForMpContactDto>>())).Returns(new BulkHubSpotContact[0]);
+            _dataPrepMock.Setup(prep => prep.ToBulk(It.IsAny<List<BulkSyncFailure>>())).Returns(new BulkHubSpotContact[0]);
+            _dataPrepMock.Setup(prep => prep.ToSerial(It.IsAny<List<BulkSyncFailure>>())).Returns(new SerialHubSpotContact[0]);
             _syncActivityCleanerMock.Setup(activityCleaner => activityCleaner.CleanUp(It.IsAny<ISyncActivity>()));
         }
 
@@ -128,14 +128,14 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Test.Services
             result.ChildAgeAndGradeUpdateOperation.Should().NotBeNull();
 
             _mpContactRepoMock.Verify(repo => repo.CalculateAndPersistKidsClubAndStudentMinistryAgeAndGradeDeltas(), Times.Once);
-            _hubSpotSyncerMock.Verify(syncer => syncer.BulkSync(It.IsAny<BulkContact[]>(), 100), Times.Once);
-            _hubSpotSyncerMock.Verify(syncer => syncer.SerialCreate(It.IsAny<SerialContact[]>()), Times.Once);
-            _hubSpotSyncerMock.Verify(syncer => syncer.SerialUpdate(It.IsAny<SerialContact[]>()), Times.Once);
+            _hubSpotSyncerMock.Verify(syncer => syncer.BulkSync(It.IsAny<BulkHubSpotContact[]>(), 100), Times.Once);
+            _hubSpotSyncerMock.Verify(syncer => syncer.SerialCreate(It.IsAny<SerialHubSpotContact[]>()), Times.Once);
+            _hubSpotSyncerMock.Verify(syncer => syncer.SerialUpdate(It.IsAny<SerialHubSpotContact[]>()), Times.Once);
             _clockMock.Verify(clock => clock.UtcNow, Times.Exactly(8));
-            _configSvcMock.Verify(svc => svc.GetCurrentJobProcessingState(), Times.Once);
+            _configSvcMock.Verify(svc => svc.GetCurrentSyncProgress(), Times.Once);
             _configSvcMock.Verify(svc => svc.GetLastSuccessfulSyncDates(), Times.Once);
-            _jobRepoMock.Verify(repo => repo.SetSyncJobProcessingState(It.IsAny<SyncProcessingState>()), Times.Exactly(2));
-            _jobRepoMock.Verify(repo => repo.SetLastSuccessfulSyncDates(It.IsAny<SyncDates>()), Times.Exactly(2));
+            _jobRepoMock.Verify(repo => repo.SetSyncProgress(It.IsAny<SyncProgress>()), Times.Exactly(11));
+            _jobRepoMock.Verify(repo => repo.PersistLastSuccessfulSyncDates(It.IsAny<SyncDates>()), Times.Exactly(2));
             _jobRepoMock.Verify(repo => repo.SaveHubSpotApiDailyRequestCount(It.IsAny<int>(), It.IsAny<DateTime>()), Times.Exactly(3));
             _jobRepoMock.Verify(repo => repo.SaveSyncActivity(It.IsAny<ISyncActivity>()), Times.Once);
             _dataPrepMock.Verify(prep => prep.Prep(It.IsAny<IList<NewlyRegisteredMpContactDto>>()), Times.Never);

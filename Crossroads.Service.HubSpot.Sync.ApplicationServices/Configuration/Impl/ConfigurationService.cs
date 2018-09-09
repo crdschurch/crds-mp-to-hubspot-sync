@@ -1,11 +1,11 @@
-﻿using System;
-using Crossroads.Service.HubSpot.Sync.ApplicationServices.Configuration.Dto;
+﻿using Crossroads.Service.HubSpot.Sync.ApplicationServices.Configuration.Dto;
 using Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto;
 using Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Enum;
 using Crossroads.Service.HubSpot.Sync.LiteDb.Configuration;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using System;
 
 namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Configuration.Impl
 {
@@ -34,7 +34,7 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Configuration.Impl
         {
             _logger.LogInformation("Fetching last successful sync date...");
 
-            var syncDates = _liteDbConfigurationProvider.Get<LastSuccessfulSyncDateInfo, SyncDates>();
+            var syncDates = _liteDbConfigurationProvider.Get<LastSuccessfulSyncDateInfoKeyValue, SyncDates>();
             if(syncDates.RegistrationSyncDate == default(DateTime)) // if this is true, we've never run for new MP registrations
                 syncDates.RegistrationSyncDate = _inauguralSync.RegistrationSyncDate;
 
@@ -50,10 +50,10 @@ age and grade sync: {syncDates.AgeAndGradeSyncDate.ToLocalTime()}");
             return syncDates;
         }
 
-        public SyncProcessingState GetCurrentJobProcessingState()
+        public SyncProgress GetCurrentSyncProgress()
         {
-            _logger.LogInformation("Checking job processing state...");
-            return _liteDbConfigurationProvider.Get<SyncProcessingStatus, SyncProcessingState>();
+            _logger.LogInformation("Fetching sync progress...");
+            return _liteDbConfigurationProvider.Get<SyncProgressKeyValue, SyncProgress>() ?? new SyncProgress{ SyncState = SyncState.Idle };
         }
 
         public string GetEnvironmentName()

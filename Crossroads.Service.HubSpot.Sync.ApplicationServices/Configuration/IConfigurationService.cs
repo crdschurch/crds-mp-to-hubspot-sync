@@ -1,5 +1,4 @@
 ﻿using Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto;
-using Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Enum;
 
 namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Configuration
 {
@@ -7,7 +6,11 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Configuration
     {
         SyncDates GetLastSuccessfulSyncDates();
 
-        SyncProcessingState GetCurrentJobProcessingState();
+        /// <summary>
+        /// On the initial sync run, it returns a new instance of SyncProgress with a JobState of Idle. All
+        /// subsequent syncs will pull from the data store.
+        /// </summary>
+        SyncProgress GetCurrentSyncProgress();
 
         string GetEnvironmentName();
 

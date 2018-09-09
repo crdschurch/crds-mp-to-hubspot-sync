@@ -4,10 +4,10 @@ using LiteDB;
 
 namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto
 {
-    public struct HubSpotApiDailyRequestCount : IKeyValuePair<string, int>
+    public struct HubSpotApiDailyRequestCountKeyValue : IKeyValuePair<string, int>
     {
         [BsonField("_id")]
-        public string Key => $"{nameof(HubSpotApiDailyRequestCount)}_{Date:yyyy-MM-dd}";
+        public string Key => $"{nameof(HubSpotApiDailyRequestCountKeyValue)}_{Date:yyyy-MM-dd}";
 
         /// <summary>
         /// Limit of 40K/day. Let's hold on to this value for reference.

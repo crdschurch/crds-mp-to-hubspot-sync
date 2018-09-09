@@ -1,6 +1,7 @@
 ﻿using System;
+using Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto;
 
-namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto
+namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing
 {
     /// <summary>
     /// Represents the activity for updating core HubSpot properties:

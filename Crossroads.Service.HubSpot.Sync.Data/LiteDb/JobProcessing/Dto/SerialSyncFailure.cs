@@ -10,6 +10,6 @@ namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto
 
         public HubSpotException Exception { get; set; }
 
-        public IContact Contact { get; set; }
+        public IHubSpotContact HubSpotContact { get; set; }
     }
 }

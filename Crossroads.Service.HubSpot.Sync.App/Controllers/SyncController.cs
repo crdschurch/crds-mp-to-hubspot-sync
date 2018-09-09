@@ -1,13 +1,14 @@
-﻿using Crossroads.Service.HubSpot.Sync.ApplicationServices.Logging;
+﻿using Crossroads.Service.HubSpot.Sync.ApplicationServices.Configuration;
+using Crossroads.Service.HubSpot.Sync.ApplicationServices.Logging;
 using Crossroads.Service.HubSpot.Sync.ApplicationServices.Services;
+using Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing;
+using Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto;
 using Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Enum;
+using DalSoft.Hosting.BackgroundQueue;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Linq;
-using Crossroads.Service.HubSpot.Sync.ApplicationServices.Configuration;
-using Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing;
-using DalSoft.Hosting.BackgroundQueue;
 
 namespace Crossroads.Service.HubSpot.Sync.App.Controllers
 {
@@ -49,9 +50,13 @@ namespace Crossroads.Service.HubSpot.Sync.App.Controllers
             {
                 try
                 {
-                    _backgroundQueue.Enqueue(async cancellationToken => await _syncService.Sync());
+                    var clickHereToViewProgress = $@"Click <a target=""blank"" href=""{Url.Action("ViewJobProcessingState")}"">here</a> to view progress.";
+                    var syncProgress = _configurationService.GetCurrentSyncProgress();
+                    if (syncProgress.SyncState == SyncState.Processing)
+                        return Content($"The HubSpot sync job is already processing. {clickHereToViewProgress}", "text/html");
 
-                    return Ok();
+                    _backgroundQueue.Enqueue(async cancellationToken => await _syncService.Sync());
+                    return Content($"HubSpot sync job is now processing. {clickHereToViewProgress}", "text/html");
                 }
                 catch (Exception exc)
                 {
@@ -69,7 +74,8 @@ namespace Crossroads.Service.HubSpot.Sync.App.Controllers
             {
                 try
                 {
-                    return Content($"Current state: {_configurationService.GetCurrentJobProcessingState()}");
+                    var progress = _configurationService.GetCurrentSyncProgress();
+                    return Content($"Current state: {progress.SyncState}<br/>{string.Join("<br/><br/>", progress.Steps?.Select(k => $"Step {k.Key}<br/>Step State: {k.Value.StepState}<br/>Contacts to sync: {k.Value.NumberOfContactsToSync}"))}", "text/html");
                 }
                 catch (Exception exc)
                 {
@@ -87,7 +93,7 @@ namespace Crossroads.Service.HubSpot.Sync.App.Controllers
             {
                 try
                 {
-                    _jobRepository.SetSyncJobProcessingState(SyncProcessingState.Idle);
+                    _jobRepository.SetSyncProgress(new SyncProgress {SyncState = SyncState.Idle});
 
                     return Ok();
                 }
@@ -109,10 +115,10 @@ namespace Crossroads.Service.HubSpot.Sync.App.Controllers
                 {
                     var dates = _configurationService.GetLastSuccessfulSyncDates();
                     return Content(
-                        $@"Last successful sync dates<br/>
+                        $@"<strong>Last successful sync dates</strong> (listed by order of execution)<br/>
+                        Age/Grade process date: {dates.AgeAndGradeProcessDate.ToLocalTime()}<br />
                         Registration: {dates.RegistrationSyncDate.ToLocalTime()}<br/>
                         Core update: {dates.CoreUpdateSyncDate.ToLocalTime()}<br />
-                        Age/Grade process date: {dates.AgeAndGradeProcessDate.ToLocalTime()}<br />
                         Age/Grade sync date: {dates.AgeAndGradeSyncDate.ToLocalTime()}",
                         "text/html");
                 }
@@ -171,7 +177,7 @@ namespace Crossroads.Service.HubSpot.Sync.App.Controllers
             {
                 try
                 {
-                    if (_configurationService.GetCurrentJobProcessingState() == SyncProcessingState.Processing)
+                    if (_configurationService.GetCurrentSyncProgress().SyncState == SyncState.Processing)
                         return Content("Job is currently processing. Refresh later to see the latest sync results.");
 
                     return Content(_jobRepository.GetMostRecentActivity(), "application/json");

@@ -8,19 +8,19 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services
         /// <summary>
         /// Creates and/or updates HubSpot contacts in bulk.
         /// </summary>
-        /// <param name="contacts">List of Ministry Platform contacts to sync to HubSpot.</param>
+        /// <param name="hubSpotContacts">List of Ministry Platform contacts to sync to HubSpot.</param>
         /// <param name="batchSize">Number of contacts to send to HubSpot per request.</param>
-        BulkSyncResult BulkSync(BulkContact[] contacts, int batchSize = 100);
+        BulkSyncResult BulkSync(BulkHubSpotContact[] hubSpotContacts, int batchSize = 100);
 
         /// <summary>
         /// Creates contacts serially.
         /// </summary>
-        SerialSyncResult SerialCreate(SerialContact[] contacts);
+        SerialSyncResult SerialCreate(SerialHubSpotContact[] hubSpotContacts);
 
         /// <summary>
         /// Updates contacts serially. Can also update email addresses.
         /// </summary>
-        SerialSyncResult SerialUpdate(SerialContact[] contacts);
+        SerialSyncResult SerialUpdate(SerialHubSpotContact[] hubSpotContacts);
 
         /// <summary>
         /// Responsible for deleting the contact record of the old email address that is not able to be updated
@@ -33,6 +33,6 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services
         /// 2) Delete contact by VID (acquired by old email address)
         /// 3) Update contact in HubSpot with new email address in both the url and the post body
         /// </summary>
-        SerialSyncResult ReconcileConflicts(SerialContact[] contacts);
+        SerialSyncResult ReconcileConflicts(SerialHubSpotContact[] hubSpotContacts);
     }
 }

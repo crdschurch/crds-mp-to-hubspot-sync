@@ -3,7 +3,7 @@ using Newtonsoft.Json;
 
 namespace Crossroads.Service.HubSpot.Sync.Data.HubSpot.Models.Request
 {
-    public class ContactProperty
+    public class HubSpotContactProperty
     {
         [JsonProperty(PropertyName = "property")]
         public string Name { get; set; }
@@ -13,7 +13,7 @@ namespace Crossroads.Service.HubSpot.Sync.Data.HubSpot.Models.Request
 
         public override bool Equals(object obj)
         {
-            if (obj is ContactProperty contactProperty)
+            if (obj is HubSpotContactProperty contactProperty)
             {
                 return Name.Equals(contactProperty.Name, StringComparison.InvariantCulture);
             }

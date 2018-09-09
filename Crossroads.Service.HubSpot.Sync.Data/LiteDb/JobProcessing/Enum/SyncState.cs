@@ -1,7 +1,7 @@
 ﻿
 namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Enum
 {
-    public enum SyncProcessingState
+    public enum SyncState
     {
         Idle = 1,
         Processing = 2

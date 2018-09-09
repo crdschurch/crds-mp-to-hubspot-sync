@@ -1,4 +1,4 @@
-﻿using Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto;
+﻿using Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing;
 
 namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services
 {

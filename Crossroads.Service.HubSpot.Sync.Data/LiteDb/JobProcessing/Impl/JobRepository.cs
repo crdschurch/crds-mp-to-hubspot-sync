@@ -1,6 +1,6 @@
-﻿using Crossroads.Service.HubSpot.Sync.Core.Time;
+﻿using Crossroads.Service.HubSpot.Sync.Core.Serialization;
+using Crossroads.Service.HubSpot.Sync.Core.Time;
 using Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto;
-using Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Enum;
 using Crossroads.Service.HubSpot.Sync.LiteDb.Configuration;
 using Crossroads.Service.HubSpot.Sync.LiteDB;
 using LiteDB;
@@ -8,7 +8,6 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Crossroads.Service.HubSpot.Sync.Core.Serialization;
 
 namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Impl
 {
@@ -34,17 +33,17 @@ namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Impl
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public SyncDates SetLastSuccessfulSyncDates(SyncDates syncDates)
+        public SyncDates PersistLastSuccessfulSyncDates(SyncDates syncDates)
         {
-            _liteDbRepository.Upsert(new LastSuccessfulSyncDateInfo {Value = syncDates, LastUpdated = _clock.UtcNow});
+            _liteDbRepository.Upsert(new LastSuccessfulSyncDateInfoKeyValue {Value = syncDates, LastUpdated = _clock.UtcNow});
             return syncDates;
         }
 
-        public SyncProcessingState SetSyncJobProcessingState(SyncProcessingState syncProcessingState)
+        public void SetSyncProgress(SyncProgress syncProgress)
         {
-            _liteDbRepository.Upsert(new SyncProcessingStatus { Value = syncProcessingState, LastUpdated = _clock.UtcNow});
-            _logger.LogInformation($"Job is now in '{syncProcessingState}' state.");
-            return _liteDbConfigurationProvider.Get<SyncProcessingStatus, SyncProcessingState>();
+            _liteDbRepository.Upsert(new SyncProgressKeyValue { Value = syncProgress, LastUpdated = _clock.UtcNow});
+            _logger.LogInformation($"Job is now in '{syncProgress.SyncState}' state.");
+            _logger.LogInformation($"{string.Join("\r\n", syncProgress.Steps.Select(k => $"Step {k.Key}: {k.Value}"))}");
         }
 
         public bool SaveSyncActivity(ISyncActivity syncActivity)
@@ -56,10 +55,10 @@ namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Impl
 
         public bool SaveHubSpotApiDailyRequestCount(int mostRecentRequestCount, DateTime activityDateTime)
         {
-            var previousRequestStats = _liteDbRepository.SingleOrDefault<HubSpotApiDailyRequestCount>(rq => rq.Date == activityDateTime.Date);
+            var previousRequestStats = _liteDbRepository.SingleOrDefault<HubSpotApiDailyRequestCountKeyValue>(rq => rq.Date == activityDateTime.Date);
             _logger.LogInformation($"Previous request count: {previousRequestStats.Value}");
 
-            var toPersist = new HubSpotApiDailyRequestCount
+            var toPersist = new HubSpotApiDailyRequestCountKeyValue
             {
                 Value = previousRequestStats.Value + mostRecentRequestCount,
                 Date = activityDateTime.Date,
@@ -72,9 +71,9 @@ namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Impl
             return _liteDbRepository.Upsert(toPersist);
         }
 
-        public List<HubSpotApiDailyRequestCount> GetHubSpotApiDailyRequestCount()
+        public List<HubSpotApiDailyRequestCountKeyValue> GetHubSpotApiDailyRequestCount()
         {
-            return _liteDbRepository.Fetch<HubSpotApiDailyRequestCount>();
+            return _liteDbRepository.Fetch<HubSpotApiDailyRequestCountKeyValue>();
         }
 
         public string GetActivity(string activityId)

@@ -26,14 +26,14 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services
     /// </summary>
     public interface IPrepareMpDataForHubSpot
     {
-        SerialContact[] Prep(IList<NewlyRegisteredMpContactDto> newContacts);
+        SerialHubSpotContact[] Prep(IList<NewlyRegisteredMpContactDto> newContacts);
 
-        SerialContact[] Prep(IDictionary<string, List<CoreUpdateMpContactDto>> contactUpdates);
+        SerialHubSpotContact[] Prep(IDictionary<string, List<CoreUpdateMpContactDto>> contactUpdates);
 
-        BulkContact[] Prep(IList<AgeAndGradeGroupCountsForMpContactDto> mpContacts);
+        BulkHubSpotContact[] Prep(IList<AgeAndGradeGroupCountsForMpContactDto> mpContacts);
 
-        BulkContact[] ToBulk(List<BulkSyncFailure> failedBatches);
+        BulkHubSpotContact[] ToBulk(List<BulkSyncFailure> failedBatches);
 
-        SerialContact[] ToSerial(List<BulkSyncFailure> failedBatches);
+        SerialHubSpotContact[] ToSerial(List<BulkSyncFailure> failedBatches);
     }
 }

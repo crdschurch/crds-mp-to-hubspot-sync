@@ -11,17 +11,21 @@ namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto
     {
         public SyncActivityChildAgeAndGradeUpdateOperation()
         {
+            BulkUpdateSyncResult1000 = new BulkSyncResult();
             BulkUpdateSyncResult100 = new BulkSyncResult();
             BulkUpdateSyncResult10 = new BulkSyncResult();
             RetryBulkUpdateAsSerialUpdateResult = new SerialSyncResult();
+            SerialCreateResult = new SerialSyncResult();
         }
 
         public SyncActivityChildAgeAndGradeUpdateOperation(DateTime executionStartTime)
         {
             Execution = new ExecutionTime(executionStartTime);
+            BulkUpdateSyncResult1000 = new BulkSyncResult();
             BulkUpdateSyncResult100 = new BulkSyncResult();
             BulkUpdateSyncResult10 = new BulkSyncResult();
             RetryBulkUpdateAsSerialUpdateResult = new SerialSyncResult();
+            SerialCreateResult = new SerialSyncResult();
         }
 
         public IExecutionTime Execution { get; set; }
@@ -34,18 +38,22 @@ namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto
 
         public int InitialSuccessCount => BulkUpdateSyncResult100.SuccessCount;
 
-        public int RetrySuccessCount => RetryBulkUpdateAsSerialUpdateResult.SuccessCount + BulkUpdateSyncResult10.SuccessCount;
+        public int RetrySuccessCount => BulkUpdateSyncResult100.SuccessCount +
+                                        BulkUpdateSyncResult10.SuccessCount +
+                                        RetryBulkUpdateAsSerialUpdateResult.SuccessCount +
+                                        SerialCreateResult.SuccessCount;
 
         public int InitialFailureCount => BulkUpdateSyncResult100.FailureCount;
 
-        public int RetryFailureCount => RetryBulkUpdateAsSerialUpdateResult.FailureCount;
+        public int RetryFailureCount => RetryBulkUpdateAsSerialUpdateResult.FailureCount + SerialCreateResult.FailureCount;
 
-        public int EmailAddressAlreadyExistsCount => RetryBulkUpdateAsSerialUpdateResult.EmailAddressAlreadyExistsCount;
+        public int EmailAddressAlreadyExistsCount => RetryBulkUpdateAsSerialUpdateResult.EmailAddressAlreadyExistsCount + SerialCreateResult.EmailAddressAlreadyExistsCount;
 
-        public int HubSpotApiRequestCount => BulkUpdateSyncResult100.BatchCount +
+        public int HubSpotApiRequestCount => BulkUpdateSyncResult1000.BatchCount +
+                                             BulkUpdateSyncResult100.BatchCount +
                                              BulkUpdateSyncResult10.BatchCount +
-                                             RetryBulkUpdateAsSerialUpdateResult.SuccessCount +
-                                             RetryBulkUpdateAsSerialUpdateResult.FailureCount;
+                                             RetryBulkUpdateAsSerialUpdateResult.TotalContacts +
+                                             SerialCreateResult.TotalContacts;
 
         public ChildAgeAndGradeDeltaLogDto AgeAndGradeDelta { get; set; }
 

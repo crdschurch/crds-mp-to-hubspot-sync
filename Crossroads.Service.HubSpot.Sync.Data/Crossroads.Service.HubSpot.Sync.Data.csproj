@@ -5,7 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Crossroads.Web.Common" Version="2.0.7" />
+    <PackageReference Include="Crossroads.Web.Common" Version="2.0.8" />
   </ItemGroup>
 
   <ItemGroup>

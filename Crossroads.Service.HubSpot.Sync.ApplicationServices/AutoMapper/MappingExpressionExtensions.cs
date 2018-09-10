@@ -19,7 +19,7 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.AutoMapper
         /// <param name="expression">Mapping expression to be manipulated.</param>
         /// <param name="sourceEmailSelector">The means by which we source our email address to pass into the HubSpot contact instance.</param>
         /// <param name="environment">Environment in which the app is being executed.</param>
-        public static void MapMpToHubSpot<TMpContact, THubSpotContact>(
+        public static void MapMpContactToHubSpotContact<TMpContact, THubSpotContact>(
             this IMappingExpression<TMpContact, THubSpotContact> expression,
             Func<TMpContact, string> sourceEmailSelector,
             string environment)

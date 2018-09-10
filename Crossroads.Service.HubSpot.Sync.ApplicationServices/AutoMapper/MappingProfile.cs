@@ -16,16 +16,16 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.AutoMapper
             CreateMap<BulkHubSpotContact, SerialHubSpotContact>();
 
             // newly registered contact(s)
-            CreateMap<NewlyRegisteredMpContactDto, SerialHubSpotContact>().MapMpToHubSpot(dto => dto.Email, environment);
+            CreateMap<NewlyRegisteredMpContactDto, SerialHubSpotContact>().MapMpContactToHubSpotContact(dto => dto.Email, environment);
 
             // when email address changed
-            CreateMap<CoreUpdateMpContactDto, EmailAddressChangedHubSpotContact>().MapMpToHubSpot(dto => dto.PreviousValue, environment);
+            CreateMap<CoreUpdateMpContactDto, EmailAddressChangedHubSpotContact>().MapMpContactToHubSpotContact(dto => dto.PreviousValue, environment);
 
             // when non-email updates have occurred
-            CreateMap<CoreUpdateMpContactDto, NonEmailAttributesChangedHubSpotContact>().MapMpToHubSpot(dto => dto.Email, environment);
+            CreateMap<CoreUpdateMpContactDto, NonEmailAttributesChangedHubSpotContact>().MapMpContactToHubSpotContact(dto => dto.Email, environment);
 
             // age/grade data changed
-            CreateMap<AgeAndGradeGroupCountsForMpContactDto, BulkHubSpotContact>().MapMpToHubSpot(dto => dto.Email, environment);
+            CreateMap<AgeAndGradeGroupCountsForMpContactDto, BulkHubSpotContact>().MapMpContactToHubSpotContact(dto => dto.Email, environment);
         }
     }
 }

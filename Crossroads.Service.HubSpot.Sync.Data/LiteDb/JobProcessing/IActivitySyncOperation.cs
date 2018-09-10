@@ -3,12 +3,7 @@ using Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto;
 
 namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing
 {
-    /// <summary>
-    /// Represents the activity for updating core HubSpot properties:
-    /// First name, Last name, Email, Community, Marital Status. It also
-    /// captures results (stats, errors, etc) around the sync operation.
-    /// </summary>
-    public interface ISyncActivityOperation
+    public interface IActivitySyncOperation
     {
         IExecutionTime Execution { get; }
 

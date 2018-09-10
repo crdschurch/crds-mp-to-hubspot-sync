@@ -1,6 +1,6 @@
 ﻿namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Enum
 {
-    public enum SyncStepName
+    public enum OperationName
     {
         /// <summary>
         /// Stored procedure responsible for calculating and persisting the number of children

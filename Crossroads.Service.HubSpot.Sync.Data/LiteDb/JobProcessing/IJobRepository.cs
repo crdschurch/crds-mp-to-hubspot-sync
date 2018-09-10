@@ -7,11 +7,11 @@ namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing
 {
     public interface IJobRepository
     {
-        SyncDates PersistLastSuccessfulSyncDates(SyncDates syncDates);
+        OperationDates PersistLastSuccessfulOperationDates(OperationDates operationDates);
 
-        void SetSyncProgress(SyncProgress syncProgress);
+        void PersistActivityProgress(ActivityProgress activityProgress);
 
-        bool SaveSyncActivity(ISyncActivity syncActivity);
+        bool PersistActivity(IActivity activity);
 
         bool SaveHubSpotApiDailyRequestCount(int mostRecentRequestCount, DateTime activityDateTime);
 

@@ -1,5 +1,4 @@
 ﻿using Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing;
-using Crossroads.Service.HubSpot.Sync.Data.MP.Dto;
 using FluentValidation;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,7 +10,7 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Validation
     /// Interrogates the activity object to determine if any showstoppers/potentially temporary failures
     /// that could be retried next time around and finish with success.
     /// </summary>
-    public class SyncActivityValidator : AbstractValidator<ISyncActivity>
+    public class ActivityValidator : AbstractValidator<IActivity>
     {
         /// <summary>
         /// Contact attribute data is being passed across the wire to HubSpot before the property
@@ -30,26 +29,26 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Validation
         /// </summary>
         private const string HubSpotPropertyInvalidOptionSearchString = "INVALID_OPTION";
 
-        public SyncActivityValidator()
+        public ActivityValidator()
         {
             RuleFor(activity => activity).NotNull();
 
-            RuleSet(RuleSetName.Registration, () =>
+            RuleSet(RuleSetName.NewRegistrationSync, () =>
             {
-                RuleFor(activity => activity.NewRegistrationOperation).NotNull();
-                RuleFor(activity => activity.NewRegistrationOperation).Must(NotHaveEncounteredHubSpotIssuesDuringNewRegistrationSyncOperation);
+                RuleFor(activity => activity.NewRegistrationSyncOperation).NotNull();
+                RuleFor(activity => activity.NewRegistrationSyncOperation).Must(NotHaveEncounteredHubSpotIssuesDuringNewRegistrationSyncOperation);
             });
 
-            RuleSet(RuleSetName.CoreUpdate, () =>
+            RuleSet(RuleSetName.CoreContactAttributeSync, () =>
             {
-                RuleFor(activity => activity.CoreUpdateOperation).NotNull();
-                RuleFor(activity => activity.CoreUpdateOperation).Must(NotHaveEncounteredHubSpotIssuesDuringCoreUpdateSyncOperation);
+                RuleFor(activity => activity.CoreContactAttributeSyncOperation).NotNull();
+                RuleFor(activity => activity.CoreContactAttributeSyncOperation).Must(NotHaveEncounteredHubSpotIssuesDuringCoreUpdateSyncOperation);
             });
 
-            RuleSet(RuleSetName.AgeGradeUpdate, () =>
+            RuleSet(RuleSetName.ChildAgeGradeSync, () =>
             {
-                RuleFor(activity => activity.ChildAgeAndGradeUpdateOperation).NotNull();
-                RuleFor(activity => activity.ChildAgeAndGradeUpdateOperation).Must(NotHaveEncounteredHubSpotIssuesDuringAgeGradeSyncOperation);
+                RuleFor(activity => activity.ChildAgeAndGradeSyncOperation).NotNull();
+                RuleFor(activity => activity.ChildAgeAndGradeSyncOperation).Must(NotHaveEncounteredHubSpotIssuesDuringAgeGradeSyncOperation);
             });
         }
 
@@ -57,7 +56,7 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Validation
         /// If a property doesn't exist in HubSpot, then don't save a last successful date for
         /// new registrations b/c records have been rejected that need to be retried.
         /// </summary>
-        private bool NotHaveEncounteredHubSpotIssuesDuringNewRegistrationSyncOperation(ISyncActivityOperation operation)
+        private bool NotHaveEncounteredHubSpotIssuesDuringNewRegistrationSyncOperation(IActivitySyncOperation operation)
         {
             var failures = operation.SerialCreateResult.Failures
                 .Union(operation.SerialUpdateResult.Failures)
@@ -70,7 +69,7 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Validation
         /// If a property doesn't exist in HubSpot, then don't save last successful dates for core
         /// contact updates b/c records have been rejected that need to be retried.
         /// </summary>
-        private bool NotHaveEncounteredHubSpotIssuesDuringCoreUpdateSyncOperation(ISyncActivityOperation operation)
+        private bool NotHaveEncounteredHubSpotIssuesDuringCoreUpdateSyncOperation(IActivitySyncOperation operation)
         {
             var failures = operation.SerialUpdateResult.Failures
                 .Union(operation.SerialCreateResult.Failures)
@@ -79,7 +78,7 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Validation
             return HubSpotIssuesEncountered(failures) == false;
         }
 
-        private bool NotHaveEncounteredHubSpotIssuesDuringAgeGradeSyncOperation(ISyncActivityChildAgeAndGradeUpdateOperation operation)
+        private bool NotHaveEncounteredHubSpotIssuesDuringAgeGradeSyncOperation(IActivityChildAgeAndGradeSyncOperation operation)
         {
             var failures = operation.BulkUpdateSyncResult1000.FailedBatches
                 .Union(operation.BulkUpdateSyncResult100.FailedBatches)

@@ -28,7 +28,7 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Test.Services
         private readonly Mock<IConfigurationService> _configSvcMock;
         private readonly Mock<IJobRepository> _jobRepoMock;
         private readonly Mock<IPrepareMpDataForHubSpot> _dataPrepMock;
-        private readonly Mock<ICleanUpSyncActivity> _syncActivityCleanerMock;
+        private readonly Mock<ICleanUpActivity> _activityCleanerMock;
         private readonly Mock<ILogger<SyncMpContactsToHubSpotService>> _loggerMock;
         private readonly SyncMpContactsToHubSpotService _fixture;
 
@@ -40,8 +40,8 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Test.Services
             _configSvcMock = new Mock<IConfigurationService>(MockBehavior.Strict);
             _jobRepoMock = new Mock<IJobRepository>(MockBehavior.Strict);
             _dataPrepMock = new Mock<IPrepareMpDataForHubSpot>(MockBehavior.Strict);
-            IValidator<ISyncActivity> syncActivityValidator = new SyncActivityValidator();
-            _syncActivityCleanerMock = new Mock<ICleanUpSyncActivity>(MockBehavior.Strict);
+            IValidator<IActivity> activityValidator = new ActivityValidator();
+            _activityCleanerMock = new Mock<ICleanUpActivity>(MockBehavior.Strict);
             _loggerMock = new Mock<ILogger<SyncMpContactsToHubSpotService>>(MockBehavior.Default);
 
             _fixture = new SyncMpContactsToHubSpotService(
@@ -51,8 +51,8 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Test.Services
                 _configSvcMock.Object,
                 _jobRepoMock.Object,
                 _dataPrepMock.Object,
-                syncActivityValidator,
-                _syncActivityCleanerMock.Object,
+                activityValidator,
+                _activityCleanerMock.Object,
                 _loggerMock.Object);
         }
 
@@ -64,7 +64,7 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Test.Services
             var registrationDate = DateTime.Parse("2018-05-21 1:00:00AM");
             var coreUpdateDate = DateTime.Parse("2018-05-21 2:00:00AM");
             var ageGradeSyncDate = DateTime.Parse("2018-05-21 3:00:00AM");
-            var syncDates = new SyncDates
+            var operationDates = new OperationDates
             {
                 RegistrationSyncDate = registrationDate,
                 CoreUpdateSyncDate = coreUpdateDate,
@@ -99,18 +99,18 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Test.Services
             _hubSpotSyncerMock.Setup(syncer => syncer.SerialCreate(It.IsAny<SerialHubSpotContact[]>())).Returns(new SerialSyncResult());
             _hubSpotSyncerMock.Setup(syncer => syncer.SerialUpdate(It.IsAny<SerialHubSpotContact[]>())).Returns(new SerialSyncResult());
             _clockMock.Setup(clock => clock.UtcNow).Returns(utcNowMockDateTime);
-            _configSvcMock.Setup(svc => svc.GetCurrentSyncProgress()).Returns(new SyncProgress { SyncState = SyncState.Idle});
-            _configSvcMock.Setup(svc => svc.GetLastSuccessfulSyncDates()).Returns(syncDates);
+            _configSvcMock.Setup(svc => svc.GetCurrentActivityProgress()).Returns(new ActivityProgress { ActivityState = ActivityState.Idle});
+            _configSvcMock.Setup(svc => svc.GetLastSuccessfulOperationDates()).Returns(operationDates);
             _configSvcMock.Setup(svc => svc.PersistActivity()).Returns(true);
-            _jobRepoMock.Setup(repo => repo.SetSyncProgress(It.IsAny<SyncProgress>()));
-            _jobRepoMock.Setup(repo => repo.PersistLastSuccessfulSyncDates(It.IsAny<SyncDates>())).Returns<SyncDates>(x => x);
+            _jobRepoMock.Setup(repo => repo.PersistActivityProgress(It.IsAny<ActivityProgress>()));
+            _jobRepoMock.Setup(repo => repo.PersistLastSuccessfulOperationDates(It.IsAny<OperationDates>())).Returns<OperationDates>(x => x);
             _jobRepoMock.Setup(repo => repo.SaveHubSpotApiDailyRequestCount(It.IsAny<int>(), It.IsAny<DateTime>())).Returns(true);
-            _jobRepoMock.Setup(repo => repo.SaveSyncActivity(It.IsAny<ISyncActivity>())).Returns(true);
+            _jobRepoMock.Setup(repo => repo.PersistActivity(It.IsAny<IActivity>())).Returns(true);
             _dataPrepMock.Setup(prep => prep.Prep(It.IsAny<IDictionary<string, List<CoreUpdateMpContactDto>>>())).Returns(new SerialHubSpotContact[0]);
             _dataPrepMock.Setup(prep => prep.Prep(It.IsAny<List<AgeAndGradeGroupCountsForMpContactDto>>())).Returns(new BulkHubSpotContact[0]);
             _dataPrepMock.Setup(prep => prep.ToBulk(It.IsAny<List<BulkSyncFailure>>())).Returns(new BulkHubSpotContact[0]);
             _dataPrepMock.Setup(prep => prep.ToSerial(It.IsAny<List<BulkSyncFailure>>())).Returns(new SerialHubSpotContact[0]);
-            _syncActivityCleanerMock.Setup(activityCleaner => activityCleaner.CleanUp(It.IsAny<ISyncActivity>()));
+            _activityCleanerMock.Setup(activityCleaner => activityCleaner.CleanUp(It.IsAny<IActivity>()));
         }
 
         [Fact]
@@ -123,27 +123,27 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Test.Services
             var result = await _fixture.Sync();
 
             // assert
-            result.NewRegistrationOperation.Should().NotBeNull();
-            result.CoreUpdateOperation.Should().NotBeNull();
-            result.ChildAgeAndGradeUpdateOperation.Should().NotBeNull();
+            result.NewRegistrationSyncOperation.Should().NotBeNull();
+            result.CoreContactAttributeSyncOperation.Should().NotBeNull();
+            result.ChildAgeAndGradeSyncOperation.Should().NotBeNull();
 
             _mpContactRepoMock.Verify(repo => repo.CalculateAndPersistKidsClubAndStudentMinistryAgeAndGradeDeltas(), Times.Once);
             _hubSpotSyncerMock.Verify(syncer => syncer.BulkSync(It.IsAny<BulkHubSpotContact[]>(), 100), Times.Once);
             _hubSpotSyncerMock.Verify(syncer => syncer.SerialCreate(It.IsAny<SerialHubSpotContact[]>()), Times.Once);
             _hubSpotSyncerMock.Verify(syncer => syncer.SerialUpdate(It.IsAny<SerialHubSpotContact[]>()), Times.Once);
             _clockMock.Verify(clock => clock.UtcNow, Times.Exactly(8));
-            _configSvcMock.Verify(svc => svc.GetCurrentSyncProgress(), Times.Once);
-            _configSvcMock.Verify(svc => svc.GetLastSuccessfulSyncDates(), Times.Once);
-            _jobRepoMock.Verify(repo => repo.SetSyncProgress(It.IsAny<SyncProgress>()), Times.Exactly(11));
-            _jobRepoMock.Verify(repo => repo.PersistLastSuccessfulSyncDates(It.IsAny<SyncDates>()), Times.Exactly(2));
+            _configSvcMock.Verify(svc => svc.GetCurrentActivityProgress(), Times.Once);
+            _configSvcMock.Verify(svc => svc.GetLastSuccessfulOperationDates(), Times.Once);
+            _jobRepoMock.Verify(repo => repo.PersistActivityProgress(It.IsAny<ActivityProgress>()), Times.Exactly(11));
+            _jobRepoMock.Verify(repo => repo.PersistLastSuccessfulOperationDates(It.IsAny<OperationDates>()), Times.Exactly(2));
             _jobRepoMock.Verify(repo => repo.SaveHubSpotApiDailyRequestCount(It.IsAny<int>(), It.IsAny<DateTime>()), Times.Exactly(3));
-            _jobRepoMock.Verify(repo => repo.SaveSyncActivity(It.IsAny<ISyncActivity>()), Times.Once);
+            _jobRepoMock.Verify(repo => repo.PersistActivity(It.IsAny<IActivity>()), Times.Once);
             _dataPrepMock.Verify(prep => prep.Prep(It.IsAny<IList<NewlyRegisteredMpContactDto>>()), Times.Never);
             _dataPrepMock.Verify(prep => prep.Prep(It.IsAny<IDictionary<string, List<CoreUpdateMpContactDto>>>()), Times.Never);
             _dataPrepMock.Verify(prep => prep.Prep(It.IsAny<List<AgeAndGradeGroupCountsForMpContactDto>>()), Times.Once);
             _dataPrepMock.Verify(prep => prep.ToBulk(It.IsAny<List<BulkSyncFailure>>()), Times.Exactly(2));
             _dataPrepMock.Verify(prep => prep.ToSerial(It.IsAny<List<BulkSyncFailure>>()), Times.Once);
-            _syncActivityCleanerMock.Verify(activityCleaner => activityCleaner.CleanUp(It.IsAny<ISyncActivity>()), Times.Once);
+            _activityCleanerMock.Verify(activityCleaner => activityCleaner.CleanUp(It.IsAny<IActivity>()), Times.Once);
         }
     }
 }

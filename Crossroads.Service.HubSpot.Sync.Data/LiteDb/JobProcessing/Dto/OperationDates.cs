@@ -2,7 +2,7 @@
 
 namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto
 {
-    public struct SyncDates
+    public struct OperationDates
     {
         public DateTime RegistrationSyncDate { get; set; }
 

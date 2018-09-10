@@ -1,6 +1,6 @@
 ﻿namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Enum
 {
-    public enum SyncStepState
+    public enum OperationState
     {
         /// <summary>
         /// Default state.

@@ -30,11 +30,11 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Configuration.Impl
             _inauguralSync = inauguralSync?.Value ?? throw new ArgumentNullException(nameof(inauguralSync));
         }
 
-        public SyncDates GetLastSuccessfulSyncDates()
+        public OperationDates GetLastSuccessfulOperationDates()
         {
-            _logger.LogInformation("Fetching last successful sync date...");
+            _logger.LogInformation("Fetching last successful operation dates...");
 
-            var syncDates = _liteDbConfigurationProvider.Get<LastSuccessfulSyncDateInfoKeyValue, SyncDates>();
+            var syncDates = _liteDbConfigurationProvider.Get<LastSuccessfulOperationDateInfoKeyValue, OperationDates>();
             if(syncDates.RegistrationSyncDate == default(DateTime)) // if this is true, we've never run for new MP registrations
                 syncDates.RegistrationSyncDate = _inauguralSync.RegistrationSyncDate;
 
@@ -50,10 +50,10 @@ age and grade sync: {syncDates.AgeAndGradeSyncDate.ToLocalTime()}");
             return syncDates;
         }
 
-        public SyncProgress GetCurrentSyncProgress()
+        public ActivityProgress GetCurrentActivityProgress()
         {
-            _logger.LogInformation("Fetching sync progress...");
-            return _liteDbConfigurationProvider.Get<SyncProgressKeyValue, SyncProgress>() ?? new SyncProgress{ SyncState = SyncState.Idle };
+            _logger.LogInformation("Fetching activity progress...");
+            return _liteDbConfigurationProvider.Get<ActivityProgressKeyValue, ActivityProgress>() ?? new ActivityProgress{ ActivityState = ActivityState.Idle };
         }
 
         public string GetEnvironmentName()

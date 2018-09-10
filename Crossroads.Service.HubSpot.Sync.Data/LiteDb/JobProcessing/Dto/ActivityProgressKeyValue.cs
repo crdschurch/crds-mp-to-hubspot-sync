@@ -4,12 +4,12 @@ using System;
 
 namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto
 {
-    public struct SyncProgressKeyValue : IKeyValuePair<string, SyncProgress>
+    public struct ActivityProgressKeyValue : IKeyValuePair<string, ActivityProgress>
     {
         [BsonField("_id")]
-        public string Key => nameof(SyncProgressKeyValue);
+        public string Key => nameof(ActivityProgressKeyValue);
 
-        public SyncProgress Value { get; set; }
+        public ActivityProgress Value { get; set; }
 
         public DateTime LastUpdated { get; set; }
     }

@@ -29,7 +29,7 @@ namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing
     /// 
     /// It also captures results (stats, errors, etc) around the sync operation.
     /// </summary>
-    public interface ISyncActivityChildAgeAndGradeUpdateOperation
+    public interface IActivityChildAgeAndGradeSyncOperation
     {
         IExecutionTime Execution { get; }
 

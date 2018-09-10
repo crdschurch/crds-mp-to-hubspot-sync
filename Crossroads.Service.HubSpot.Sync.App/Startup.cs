@@ -53,7 +53,7 @@ namespace Crossroads.Service.HubSpot.Sync.App
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddMvc().AddFluentValidation(fv => fv.RegisterValidatorsFromAssemblyContaining<SyncActivityValidator>()); ;
+            services.AddMvc().AddFluentValidation(fv => fv.RegisterValidatorsFromAssemblyContaining<ActivityValidator>()); ;
             services.AddRouting(options => options.LowercaseUrls = false);
             services.AddCors();
 
@@ -73,7 +73,7 @@ namespace Crossroads.Service.HubSpot.Sync.App
             services.AddSingleton<ILiteDbConfigurationProvider, LiteDbConfigurationProvider>();
             services.AddSingleton<IJobRepository, JobRepository>();
             services.AddSingleton<IConfigurationService, ConfigurationService>();
-            services.AddSingleton<ICleanUpSyncActivity, CleanUpSyncActivity>();
+            services.AddSingleton<ICleanUpActivity, CleanUpActivity>();
             services.AddSingleton(Configuration);
             services.Configure<InauguralSync>(Configuration.GetSection("InauguralSync"));
             services.Configure<DocumentDbSettings>(Configuration.GetSection("DocumentDbSettings"));

@@ -10,7 +10,7 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Test.Services
 {
     public class CleanUpSyncActivityTests
     {
-        private readonly CleanUpSyncActivity _fixture = new CleanUpSyncActivity();
+        private readonly CleanUpActivity _fixture = new CleanUpActivity();
 
         [Fact]
         public void Given_A_Null_Activity_Clean_Up_Should_Not_Throw_An_Exception()
@@ -23,28 +23,28 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Test.Services
         public void Given_An_Activity_With_Contacts_That_Failed_To_Sync_Clean_Up_Should_Null_All_Failed_Contacts()
         {
             var bulkContacts = new List<BulkHubSpotContact> {new BulkHubSpotContact {Email = "i@t.co.uk"}, new BulkHubSpotContact{Email = "y@a.net"}};
-            var activity = new SyncActivity();
-            activity.NewRegistrationOperation.SerialCreateResult.Failures.Add(new SerialSyncFailure {HubSpotContact = new SerialHubSpotContact { Email = "r@f.org" }});
-            activity.NewRegistrationOperation.SerialUpdateResult.Failures.Add(new SerialSyncFailure { HubSpotContact = new SerialHubSpotContact { Email = "s@g.org" } });
+            var activity = new Activity();
+            activity.NewRegistrationSyncOperation.SerialCreateResult.Failures.Add(new SerialSyncFailure {HubSpotContact = new SerialHubSpotContact { Email = "r@f.org" }});
+            activity.NewRegistrationSyncOperation.SerialUpdateResult.Failures.Add(new SerialSyncFailure { HubSpotContact = new SerialHubSpotContact { Email = "s@g.org" } });
 
-            activity.CoreUpdateOperation.SerialUpdateResult.Failures.Add(new SerialSyncFailure { HubSpotContact = new SerialHubSpotContact { Email = "r@f.org" }});
-            activity.CoreUpdateOperation.SerialCreateResult.Failures.Add(new SerialSyncFailure { HubSpotContact = new SerialHubSpotContact { Email = "s@g.org" }});
-            activity.CoreUpdateOperation.SerialReconciliationResult.Failures.Add(new SerialSyncFailure { HubSpotContact = new SerialHubSpotContact { Email = "t@h.org" } });
+            activity.CoreContactAttributeSyncOperation.SerialUpdateResult.Failures.Add(new SerialSyncFailure { HubSpotContact = new SerialHubSpotContact { Email = "r@f.org" }});
+            activity.CoreContactAttributeSyncOperation.SerialCreateResult.Failures.Add(new SerialSyncFailure { HubSpotContact = new SerialHubSpotContact { Email = "s@g.org" }});
+            activity.CoreContactAttributeSyncOperation.SerialReconciliationResult.Failures.Add(new SerialSyncFailure { HubSpotContact = new SerialHubSpotContact { Email = "t@h.org" } });
 
-            activity.ChildAgeAndGradeUpdateOperation.BulkUpdateSyncResult100.FailedBatches.AddRange(new[] { new BulkSyncFailure { HubSpotContacts = bulkContacts.ToArray() } });
-            activity.ChildAgeAndGradeUpdateOperation.BulkUpdateSyncResult10.FailedBatches.AddRange(new[] { new BulkSyncFailure { HubSpotContacts = bulkContacts.ToArray() } });
-            activity.ChildAgeAndGradeUpdateOperation.RetryBulkUpdateAsSerialUpdateResult.Failures.Add(new SerialSyncFailure { HubSpotContact = new SerialHubSpotContact { Email = "r@f.org" } });
+            activity.ChildAgeAndGradeSyncOperation.BulkUpdateSyncResult100.FailedBatches.AddRange(new[] { new BulkSyncFailure { HubSpotContacts = bulkContacts.ToArray() } });
+            activity.ChildAgeAndGradeSyncOperation.BulkUpdateSyncResult10.FailedBatches.AddRange(new[] { new BulkSyncFailure { HubSpotContacts = bulkContacts.ToArray() } });
+            activity.ChildAgeAndGradeSyncOperation.RetryBulkUpdateAsSerialUpdateResult.Failures.Add(new SerialSyncFailure { HubSpotContact = new SerialHubSpotContact { Email = "r@f.org" } });
 
             _fixture.CleanUp(activity);
 
-            activity.NewRegistrationOperation.SerialCreateResult.Failures.ForEach(f => f.HubSpotContact.Should().BeNull());
-            activity.NewRegistrationOperation.SerialUpdateResult.Failures.ForEach(f => f.HubSpotContact.Should().BeNull());
-            activity.CoreUpdateOperation.SerialUpdateResult.Failures.ForEach(f => f.HubSpotContact.Should().BeNull());
-            activity.CoreUpdateOperation.SerialCreateResult.Failures.ForEach(f => f.HubSpotContact.Should().BeNull());
-            activity.CoreUpdateOperation.SerialReconciliationResult.Failures.ForEach(f => f.HubSpotContact.Should().BeNull());
-            activity.ChildAgeAndGradeUpdateOperation.BulkUpdateSyncResult100.FailedBatches.ForEach(batch => batch.HubSpotContacts.Should().BeNull());
-            activity.ChildAgeAndGradeUpdateOperation.BulkUpdateSyncResult10.FailedBatches.ForEach(batch => batch.HubSpotContacts.Should().BeNull());
-            activity.ChildAgeAndGradeUpdateOperation.RetryBulkUpdateAsSerialUpdateResult.Failures.ForEach(f => f.HubSpotContact.Should().BeNull());
+            activity.NewRegistrationSyncOperation.SerialCreateResult.Failures.ForEach(f => f.HubSpotContact.Should().BeNull());
+            activity.NewRegistrationSyncOperation.SerialUpdateResult.Failures.ForEach(f => f.HubSpotContact.Should().BeNull());
+            activity.CoreContactAttributeSyncOperation.SerialUpdateResult.Failures.ForEach(f => f.HubSpotContact.Should().BeNull());
+            activity.CoreContactAttributeSyncOperation.SerialCreateResult.Failures.ForEach(f => f.HubSpotContact.Should().BeNull());
+            activity.CoreContactAttributeSyncOperation.SerialReconciliationResult.Failures.ForEach(f => f.HubSpotContact.Should().BeNull());
+            activity.ChildAgeAndGradeSyncOperation.BulkUpdateSyncResult100.FailedBatches.ForEach(batch => batch.HubSpotContacts.Should().BeNull());
+            activity.ChildAgeAndGradeSyncOperation.BulkUpdateSyncResult10.FailedBatches.ForEach(batch => batch.HubSpotContacts.Should().BeNull());
+            activity.ChildAgeAndGradeSyncOperation.RetryBulkUpdateAsSerialUpdateResult.Failures.ForEach(f => f.HubSpotContact.Should().BeNull());
         }
     }
 }

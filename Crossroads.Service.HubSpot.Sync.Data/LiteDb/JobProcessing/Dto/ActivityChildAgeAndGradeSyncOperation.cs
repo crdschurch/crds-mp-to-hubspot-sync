@@ -7,9 +7,9 @@ namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto
     /// Captures results (stats, errors, etc) around the operation to synchronize updated
     /// Ministry Platform contact data to HubSpot.
     /// </summary>
-    public class SyncActivityChildAgeAndGradeUpdateOperation : ISyncActivityChildAgeAndGradeUpdateOperation
+    public class ActivityChildAgeAndGradeSyncOperation : IActivityChildAgeAndGradeSyncOperation
     {
-        public SyncActivityChildAgeAndGradeUpdateOperation()
+        public ActivityChildAgeAndGradeSyncOperation()
         {
             BulkUpdateSyncResult1000 = new BulkSyncResult();
             BulkUpdateSyncResult100 = new BulkSyncResult();
@@ -18,7 +18,7 @@ namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto
             SerialCreateResult = new SerialSyncResult();
         }
 
-        public SyncActivityChildAgeAndGradeUpdateOperation(DateTime executionStartTime)
+        public ActivityChildAgeAndGradeSyncOperation(DateTime executionStartTime)
         {
             Execution = new ExecutionTime(executionStartTime);
             BulkUpdateSyncResult1000 = new BulkSyncResult();

@@ -6,16 +6,16 @@ namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto
     /// Captures results (stats, errors, etc) around the operation to synchronize updated
     /// Ministry Platform contact data to HubSpot.
     /// </summary>
-    public class SyncActivityOperation : ISyncActivityOperation
+    public class ActivitySyncOperation : IActivitySyncOperation
     {
-        public SyncActivityOperation()
+        public ActivitySyncOperation()
         {
             SerialUpdateResult = new SerialSyncResult();
             SerialCreateResult = new SerialSyncResult();
             SerialReconciliationResult = new SerialSyncResult();
         }
 
-        public SyncActivityOperation(DateTime executionStartTime)
+        public ActivitySyncOperation(DateTime executionStartTime)
         {
             Execution = new ExecutionTime(executionStartTime);
             SerialUpdateResult = new SerialSyncResult();

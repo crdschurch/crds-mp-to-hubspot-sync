@@ -4,12 +4,12 @@ using LiteDB;
 
 namespace Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto
 {
-    public struct LastSuccessfulSyncDateInfoKeyValue : IKeyValuePair<string, SyncDates>
+    public struct LastSuccessfulOperationDateInfoKeyValue : IKeyValuePair<string, OperationDates>
     {
         [BsonField("_id")]
-        public string Key => nameof(LastSuccessfulSyncDateInfoKeyValue);
+        public string Key => nameof(LastSuccessfulOperationDateInfoKeyValue);
 
-        public SyncDates Value { get; set; }
+        public OperationDates Value { get; set; }
 
         public DateTime LastUpdated { get; set; }
     }

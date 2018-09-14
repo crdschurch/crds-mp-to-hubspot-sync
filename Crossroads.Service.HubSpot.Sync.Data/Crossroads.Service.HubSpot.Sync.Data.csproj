@@ -6,11 +6,11 @@
 
   <ItemGroup>
     <PackageReference Include="Crossroads.Web.Common" Version="2.0.8" />
+    <PackageReference Include="MongoDB.Driver" Version="2.7.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Crossroads.Service.HubSpot.Sync.Core\Crossroads.Service.HubSpot.Sync.Core.csproj" />
-    <ProjectReference Include="..\Crossroads.Service.HubSpot.Sync.LiteDB\Crossroads.Service.HubSpot.Sync.LiteDB.csproj" />
   </ItemGroup>
 
 </Project>

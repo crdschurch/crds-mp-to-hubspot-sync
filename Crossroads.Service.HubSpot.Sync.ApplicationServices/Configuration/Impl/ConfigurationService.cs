@@ -1,7 +1,7 @@
 ﻿using Crossroads.Service.HubSpot.Sync.ApplicationServices.Configuration.Dto;
-using Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto;
-using Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Enum;
-using Crossroads.Service.HubSpot.Sync.LiteDb.Configuration;
+using Crossroads.Service.HubSpot.Sync.Data.MongoDb.JobProcessing.Configuration;
+using Crossroads.Service.HubSpot.Sync.Data.MongoDb.JobProcessing.Dto;
+using Crossroads.Service.HubSpot.Sync.Data.MongoDb.JobProcessing.Enum;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -11,19 +11,20 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Configuration.Impl
 {
     public class ConfigurationService : IConfigurationService
     {
-        private readonly ILiteDbConfigurationProvider _liteDbConfigurationProvider;
+        private readonly IMongoDbConfigurationProvider _mongoDbConfigurationProvider;
         private readonly IConfigurationRoot _configurationRoot;
         private readonly DocumentDbSettings _documentDbSettings;
         private readonly ILogger<ConfigurationService> _logger;
         private readonly InauguralSync _inauguralSync;
 
-        public ConfigurationService(ILiteDbConfigurationProvider liteDbConfigurationProvider,
+        public ConfigurationService(
+            IMongoDbConfigurationProvider mongoDbConfigurationProvider,
             IConfigurationRoot configurationRoot,
             IOptions<InauguralSync> inauguralSync,
             IOptions<DocumentDbSettings> documentDbSettings,
             ILogger<ConfigurationService> logger)
         {
-            _liteDbConfigurationProvider = liteDbConfigurationProvider ?? throw new ArgumentNullException(nameof(liteDbConfigurationProvider));
+            _mongoDbConfigurationProvider = mongoDbConfigurationProvider ?? throw new ArgumentNullException(nameof(mongoDbConfigurationProvider));
             _configurationRoot = configurationRoot ?? throw new ArgumentNullException(nameof(configurationRoot));
             _documentDbSettings = documentDbSettings.Value;
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -34,7 +35,7 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Configuration.Impl
         {
             _logger.LogInformation("Fetching last successful operation dates...");
 
-            var syncDates = _liteDbConfigurationProvider.Get<LastSuccessfulOperationDateInfoKeyValue, OperationDates>();
+            var syncDates = _mongoDbConfigurationProvider.Get<OperationDatesKeyValue, OperationDates>();
             if(syncDates.RegistrationSyncDate == default(DateTime)) // if this is true, we've never run for new MP registrations
                 syncDates.RegistrationSyncDate = _inauguralSync.RegistrationSyncDate;
 
@@ -53,7 +54,7 @@ age and grade sync: {syncDates.AgeAndGradeSyncDate.ToLocalTime()}");
         public ActivityProgress GetCurrentActivityProgress()
         {
             _logger.LogInformation("Fetching activity progress...");
-            return _liteDbConfigurationProvider.Get<ActivityProgressKeyValue, ActivityProgress>() ?? new ActivityProgress{ ActivityState = ActivityState.Idle };
+            return _mongoDbConfigurationProvider.Get<ActivityProgressKeyValue, ActivityProgress>() ?? new ActivityProgress{ ActivityState = ActivityState.Idle };
         }
 
         public string GetEnvironmentName()

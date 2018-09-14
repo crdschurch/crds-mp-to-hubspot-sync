@@ -3,8 +3,8 @@ using Crossroads.Service.HubSpot.Sync.Core.Time;
 using Crossroads.Service.HubSpot.Sync.Core.Utilities;
 using Crossroads.Service.HubSpot.Sync.Data.HubSpot.Models.Request;
 using Crossroads.Service.HubSpot.Sync.Data.HubSpot.Models.Response;
-using Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing;
-using Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto;
+using Crossroads.Service.HubSpot.Sync.Data.MongoDb.JobProcessing;
+using Crossroads.Service.HubSpot.Sync.Data.MongoDb.JobProcessing.Dto;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Linq;
@@ -24,8 +24,7 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
         private readonly string _hubSpotApiKey;
         private readonly ILogger<CreateOrUpdateContactsInHubSpot> _logger;
 
-        public CreateOrUpdateContactsInHubSpot(IHttpClientFacade http, IClock clock, IJsonSerializer serializer, ISleep sleeper, string hubSpotApiKey,
-            ILogger<CreateOrUpdateContactsInHubSpot> logger)
+        public CreateOrUpdateContactsInHubSpot(IHttpClientFacade http, IClock clock, IJsonSerializer serializer, ISleep sleeper, string hubSpotApiKey, ILogger<CreateOrUpdateContactsInHubSpot> logger)
         {
             _http = http ?? throw new ArgumentNullException(nameof(http));
             _clock = clock ?? throw new ArgumentNullException(nameof(clock));

@@ -1,4 +1,4 @@
-﻿using Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing;
+﻿using Crossroads.Service.HubSpot.Sync.Data.MongoDb.JobProcessing;
 
 namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services
 {

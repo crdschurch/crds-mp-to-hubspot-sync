@@ -1,7 +1,7 @@
 ﻿using Crossroads.Service.HubSpot.Sync.Data.HubSpot.Models.Request;
+using Crossroads.Service.HubSpot.Sync.Data.MongoDb.JobProcessing.Dto;
 using Crossroads.Service.HubSpot.Sync.Data.MP.Dto;
 using System.Collections.Generic;
-using Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto;
 
 namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services
 {

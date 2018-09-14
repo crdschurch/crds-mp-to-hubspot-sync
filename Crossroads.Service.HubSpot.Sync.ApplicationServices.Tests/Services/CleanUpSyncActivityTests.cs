@@ -1,6 +1,6 @@
 ﻿using Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl;
 using Crossroads.Service.HubSpot.Sync.Data.HubSpot.Models.Request;
-using Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto;
+using Crossroads.Service.HubSpot.Sync.Data.MongoDb.JobProcessing.Dto;
 using FluentAssertions;
 using System;
 using System.Collections.Generic;

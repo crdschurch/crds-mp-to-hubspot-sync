@@ -1,4 +1,4 @@
-﻿using Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing;
+﻿using Crossroads.Service.HubSpot.Sync.Data.MongoDb.JobProcessing;
 using FluentValidation;
 using System.Collections.Generic;
 using System.Linq;

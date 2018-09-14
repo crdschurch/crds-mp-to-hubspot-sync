@@ -3,9 +3,9 @@ using Crossroads.Service.HubSpot.Sync.ApplicationServices.Validation;
 using Crossroads.Service.HubSpot.Sync.Core.Logging;
 using Crossroads.Service.HubSpot.Sync.Core.Time;
 using Crossroads.Service.HubSpot.Sync.Core.Utilities;
-using Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing;
-using Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto;
-using Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Enum;
+using Crossroads.Service.HubSpot.Sync.Data.MongoDb.JobProcessing;
+using Crossroads.Service.HubSpot.Sync.Data.MongoDb.JobProcessing.Dto;
+using Crossroads.Service.HubSpot.Sync.Data.MongoDb.JobProcessing.Enum;
 using Crossroads.Service.HubSpot.Sync.Data.MP;
 using Crossroads.Service.HubSpot.Sync.Data.MP.Dto;
 using FluentValidation;
@@ -49,9 +49,9 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public async Task<IActivity> Sync()
+        public async Task<Activity> Sync()
         {
-            IActivity activity = new Activity(_clock.UtcNow);
+            var activity = new Activity(_clock.UtcNow);
             var activityProgress = default(ActivityProgress);
 
             _logger.LogInformation("Starting MP to HubSpot one-way sync operations (create new registrations first, followed by 2 update operations).");
@@ -65,8 +65,7 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
                 }
 
                 // set job processing state; get last successful sync dates
-                activityProgress = new ActivityProgress {ActivityState = ActivityState.Processing};
-                _jobRepository.PersistActivityProgress(activityProgress);
+                _jobRepository.PersistActivityProgress(activityProgress = new ActivityProgress { ActivityState = ActivityState.Processing });
                 var operationDates = activity.PreviousOperationDates = _configurationService.GetLastSuccessfulOperationDates();
                 var ageGradeDeltaLog = default(ChildAgeAndGradeDeltaLogDto);
 
@@ -119,14 +118,14 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
                 });
 
                 Util.TryCatchSwallow(() => { // sync age/grade data to hubspot contacts
-                    PersistActivityProgress(activityProgress, OperationName.AgeGradeDataSync, OperationState.Processing, ageGradeDeltaLog.InsertCount + ageGradeDeltaLog.UpdateCount);
+                    PersistActivityProgress(activityProgress, OperationName.AgeGradeDataSync, OperationState.Processing);
                     activity.ChildAgeAndGradeSyncOperation = SyncChildAgeAndGradeData(ageGradeDeltaLog, activity.PreviousOperationDates.AgeAndGradeSyncDate);
                     if (_activityValidator.Validate(activity, ruleSet: RuleSetName.ChildAgeGradeSync).IsValid)
                     {
                         if(ageGradeDeltaLog.InsertCount > 0 || ageGradeDeltaLog.UpdateCount > 0)
                             ageGradeDeltaLog.SyncCompletedUtc = operationDates.AgeAndGradeSyncDate = _ministryPlatformContactRepository.SetChildAgeAndGradeDeltaLogSyncCompletedUtcDate();
                         _jobRepository.PersistLastSuccessfulOperationDates(operationDates);
-                        PersistActivityProgress(activityProgress, OperationName.AgeGradeDataSync, OperationState.Completed, operationDuration: activity.ChildAgeAndGradeSyncOperation.Execution.Duration);
+                        PersistActivityProgress(activityProgress, OperationName.AgeGradeDataSync, OperationState.Completed, activity.ChildAgeAndGradeSyncOperation.SuccessCount, activity.ChildAgeAndGradeSyncOperation.Execution.Duration);
                     }
                     else
                         PersistActivityProgress(activityProgress, OperationName.AgeGradeDataSync, OperationState.CompletedButWithIssues, operationDuration: activity.ChildAgeAndGradeSyncOperation.Execution.Duration);
@@ -158,7 +157,7 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
             }
         }
 
-        private IActivityChildAgeAndGradeCalculationOperation CalculateAndPersistChildAgeGradeDataByHousehold(OperationDates previousOperationDates)
+        private ActivityChildAgeAndGradeCalculationOperation CalculateAndPersistChildAgeGradeDataByHousehold(OperationDates previousOperationDates)
         {
             var activity = new ActivityChildAgeAndGradeCalculationOperation(_clock.UtcNow)
             {
@@ -186,7 +185,7 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
         /// Handles create, update and reconciliation scenarios for MP CRM contacts identified as new registrants that ought to exist
         /// in the HubSpot CRM.
         /// </summary>
-        private IActivitySyncOperation SyncNewRegistrations(DateTime lastSuccessfulSyncDate, ActivityProgress activityProgress)
+        private ActivitySyncOperation SyncNewRegistrations(DateTime lastSuccessfulSyncDate, ActivityProgress activityProgress)
         {
             var activity = new ActivitySyncOperation(_clock.UtcNow) {PreviousSyncDate = lastSuccessfulSyncDate};
 
@@ -209,7 +208,7 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
             finally // *** ALWAYS *** capture the HubSpot API request count, even if an exception occurs
             {
                 activity.Execution.FinishUtc = _clock.UtcNow;
-                _jobRepository.SaveHubSpotApiDailyRequestCount(activity.HubSpotApiRequestCount, activity.Execution.StartUtc);
+                _jobRepository.PersistHubSpotApiDailyRequestCount(activity.HubSpotApiRequestCount, activity.Execution.StartUtc);
             }
         }
 
@@ -217,7 +216,7 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
         /// Capable of accommodating email address (unique identifier in HubSpot) change and other core contact attribute/property updates.
         /// Can also create a contact if it does not exist.
         /// </summary>
-        private IActivitySyncOperation SyncCoreUpdates(DateTime lastSuccessfulSyncDate, ActivityProgress activityProgress)
+        private ActivitySyncOperation SyncCoreUpdates(DateTime lastSuccessfulSyncDate, ActivityProgress activityProgress)
         {
             var activity = new ActivitySyncOperation(_clock.UtcNow) { PreviousSyncDate = lastSuccessfulSyncDate };
 
@@ -240,11 +239,11 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
             finally // *** ALWAYS *** capture the HubSpot API request count, even if an exception occurs
             {
                 activity.Execution.FinishUtc = _clock.UtcNow;
-                _jobRepository.SaveHubSpotApiDailyRequestCount(activity.HubSpotApiRequestCount, activity.Execution.StartUtc);
+                _jobRepository.PersistHubSpotApiDailyRequestCount(activity.HubSpotApiRequestCount, activity.Execution.StartUtc);
             }
         }
 
-        private IActivityChildAgeAndGradeSyncOperation SyncChildAgeAndGradeData(ChildAgeAndGradeDeltaLogDto deltaResult, DateTime lastSuccessfulSyncDate)
+        private ActivityChildAgeAndGradeSyncOperation SyncChildAgeAndGradeData(ChildAgeAndGradeDeltaLogDto deltaResult, DateTime lastSuccessfulSyncDate)
         {
             var activity = new ActivityChildAgeAndGradeSyncOperation(_clock.UtcNow)
             {
@@ -271,15 +270,15 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
             finally // *** ALWAYS *** capture the HubSpot API request count, even if an exception occurs
             {
                 activity.Execution.FinishUtc = _clock.UtcNow;
-                _jobRepository.SaveHubSpotApiDailyRequestCount(activity.HubSpotApiRequestCount, activity.Execution.StartUtc);
+                _jobRepository.PersistHubSpotApiDailyRequestCount(activity.HubSpotApiRequestCount, activity.Execution.StartUtc);
             }
         }
 
         private void PersistActivityProgress(ActivityProgress activityProgress, OperationName operationName, OperationState? operationState = null, int? operationContactCount = null, string operationDuration = null)
         {
-            activityProgress.Operations[operationName].Duration = operationDuration ?? activityProgress.Operations[operationName].Duration;
-            activityProgress.Operations[operationName].ContactCount = operationContactCount ?? activityProgress.Operations[operationName].ContactCount;
-            activityProgress.Operations[operationName].OperationState = operationState ?? activityProgress.Operations[operationName].OperationState;
+            activityProgress.Operations[operationName.ToString()].Duration = operationDuration ?? activityProgress.Operations[operationName.ToString()].Duration;
+            activityProgress.Operations[operationName.ToString()].ContactCount = operationContactCount ?? activityProgress.Operations[operationName.ToString()].ContactCount;
+            activityProgress.Operations[operationName.ToString()].OperationState = operationState ?? activityProgress.Operations[operationName.ToString()].OperationState;
             _jobRepository.PersistActivityProgress(activityProgress);
         }
 

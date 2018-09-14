@@ -4,7 +4,8 @@ using Crossroads.Service.HubSpot.Sync.Core.Time;
 using Crossroads.Service.HubSpot.Sync.Core.Utilities;
 using Crossroads.Service.HubSpot.Sync.Data.HubSpot.Models.Request;
 using Crossroads.Service.HubSpot.Sync.Data.HubSpot.Models.Response;
-using Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto;
+using Crossroads.Service.HubSpot.Sync.Data.MongoDb.JobProcessing;
+using Crossroads.Service.HubSpot.Sync.Data.MongoDb.JobProcessing.Dto;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Moq;
@@ -13,7 +14,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
-using Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing;
 using Xunit;
 
 namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Test.Services

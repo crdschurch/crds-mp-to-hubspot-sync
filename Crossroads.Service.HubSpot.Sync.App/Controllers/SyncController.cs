@@ -1,14 +1,14 @@
 ﻿using Crossroads.Service.HubSpot.Sync.ApplicationServices.Configuration;
 using Crossroads.Service.HubSpot.Sync.ApplicationServices.Logging;
 using Crossroads.Service.HubSpot.Sync.ApplicationServices.Services;
-using Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing;
-using Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto;
-using Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Enum;
 using DalSoft.Hosting.BackgroundQueue;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Linq;
+using Crossroads.Service.HubSpot.Sync.Data.MongoDb.JobProcessing;
+using Crossroads.Service.HubSpot.Sync.Data.MongoDb.JobProcessing.Dto;
+using Crossroads.Service.HubSpot.Sync.Data.MongoDb.JobProcessing.Enum;
 
 namespace Crossroads.Service.HubSpot.Sync.App.Controllers
 {
@@ -149,7 +149,7 @@ namespace Crossroads.Service.HubSpot.Sync.App.Controllers
 
         [HttpGet]
         [Route("viewall")] // maybe create a view later
-        public IActionResult ViewActivities(int limit = 20)
+        public IActionResult ViewActivities(int limit = 144)
         {
             using (_logger.BeginScope(AppEvent.Web.ViewAllSyncActivities))
             {

@@ -1,6 +1,5 @@
-﻿
-using Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
+using Crossroads.Service.HubSpot.Sync.Data.MongoDb.JobProcessing.Dto;
 
 namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services
 {
@@ -13,6 +12,6 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services
         /// <summary>
         /// Syncs newly registered Ministry Platform contacts to HubSpot.
         /// </summary>
-        Task<IActivity> Sync();
+        Task<Activity> Sync();
     }
 }

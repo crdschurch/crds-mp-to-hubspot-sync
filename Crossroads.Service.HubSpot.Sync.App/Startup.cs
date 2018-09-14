@@ -14,8 +14,6 @@ using Crossroads.Service.HubSpot.Sync.Core.Utilities.Guid;
 using Crossroads.Service.HubSpot.Sync.Core.Utilities.Guid.Impl;
 using Crossroads.Service.HubSpot.Sync.Core.Utilities.Impl;
 using Crossroads.Service.HubSpot.Sync.Data.MongoDb.JobProcessing;
-using Crossroads.Service.HubSpot.Sync.Data.MongoDb.JobProcessing.Configuration;
-using Crossroads.Service.HubSpot.Sync.Data.MongoDb.JobProcessing.Configuration.Impl;
 using Crossroads.Service.HubSpot.Sync.Data.MongoDb.JobProcessing.Impl;
 using Crossroads.Service.HubSpot.Sync.Data.MP;
 using Crossroads.Service.HubSpot.Sync.Data.MP.Impl;
@@ -66,7 +64,6 @@ namespace Crossroads.Service.HubSpot.Sync.App
             services.AddSingleton<IMinistryPlatformContactRepository, MinistryPlatformContactRepository>();
             services.AddSingleton<ISyncMpContactsToHubSpotService, SyncMpContactsToHubSpotService>();
             services.AddSingleton<IPrepareMpDataForHubSpot, PrepareMpDataForHubSpot>();
-            services.AddSingleton<IMongoDbConfigurationProvider, MongoDbConfigurationProvider>();
             services.AddSingleton(sp => new MongoClient(Configuration["MONGO_DB_CONN"]).GetDatabase("hubspotsync")); // Mongo stores UTC by default
             services.AddSingleton<IJobRepository, JobRepository>();
             services.AddSingleton<IConfigurationService, ConfigurationService>();

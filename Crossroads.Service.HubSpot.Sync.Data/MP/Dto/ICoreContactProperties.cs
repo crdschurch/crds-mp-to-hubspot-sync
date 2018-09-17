@@ -9,7 +9,7 @@
     public interface ICoreContactProperties
     {
         /// <summary>
-        /// Could be present in the individual property, **IF** someone updated their email address.
+        /// Username (dbo.dp_Users.User_Name)
         /// </summary>
         string Email { get; set; }
 

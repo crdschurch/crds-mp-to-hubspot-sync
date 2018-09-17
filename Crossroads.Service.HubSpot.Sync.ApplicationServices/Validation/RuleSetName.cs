@@ -2,8 +2,8 @@
 {
     public static class RuleSetName
     {
-        public const string Registration = "Registration";
-        public const string CoreUpdate = "CoreUpdate";
-        public const string AgeGradeUpdate = "AgeGradeUpdate";
+        public const string NewRegistrationSync = "Registration";
+        public const string CoreContactAttributeSync = "CoreUpdate";
+        public const string ChildAgeGradeSync = "AgeGradeUpdate";
     }
 }

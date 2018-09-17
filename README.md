@@ -1,6 +1,6 @@
-# crds-mp-hubspot-sync
+# crds-mp-to-hubspot-sync
 
-Syncs newly registered Ministry Platform (MP) contacts, core MP contact updates and child age/grade data to HubSpot.
+Syncs newly registered Ministry Platform (MP) contacts, core MP contact attribute updates and child Student Ministry & Kids Club age/grade data to HubSpot.
 
 ## Development
 
@@ -19,11 +19,12 @@ values
 API_PASSWORD
 API_USER
 APP_LOG_ROOT
-HUBSPOT_API_KEY
-MP_OAUTH_BASE_URL
-MP_REST_API_ENDPOINT
 CRDS_MP_COMMON_CLIENT_ID
 CRDS_MP_COMMON_CLIENT_SECRET
+HUBSPOT_API_KEY
+MONGO_DB_CONN
+MP_OAUTH_BASE_URL
+MP_REST_API_ENDPOINT
 ```
 
 #### Running the app

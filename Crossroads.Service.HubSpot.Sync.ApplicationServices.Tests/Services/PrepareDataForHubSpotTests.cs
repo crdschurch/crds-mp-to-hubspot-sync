@@ -51,15 +51,15 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Test.Services
                 }
             };
 
-            _mapperMock.Setup(m => m.Map<EmailAddressChangedContact>(updates["87654321"].First()))
-                .Returns(new EmailAddressChangedContact { Properties = new List<ContactProperty> { new ContactProperty { Name = "email", Value = "new@address.com" } } });
+            _mapperMock.Setup(m => m.Map<EmailAddressChangedHubSpotContact>(updates["87654321"].First()))
+                .Returns(new EmailAddressChangedHubSpotContact { Properties = new List<HubSpotContactProperty> { new HubSpotContactProperty { Name = "email", Value = "new@address.com" } } });
 
-            _mapperMock.Setup(m => m.Map<NonEmailAttributesChangedContact>(updates["12345678"].First()))
-                .Returns(new NonEmailAttributesChangedContact { Properties = new List<ContactProperty> { new ContactProperty { Name = "firstname", Value = "Bobbo" } } });
+            _mapperMock.Setup(m => m.Map<NonEmailAttributesChangedHubSpotContact>(updates["12345678"].First()))
+                .Returns(new NonEmailAttributesChangedHubSpotContact { Properties = new List<HubSpotContactProperty> { new HubSpotContactProperty { Name = "firstname", Value = "Bobbo" } } });
 
             var result = _fixture.Prep(updates);
-            result[0].Should().BeOfType<EmailAddressChangedContact>();
-            result[1].Should().BeOfType<NonEmailAttributesChangedContact>();
+            result[0].Should().BeOfType<EmailAddressChangedHubSpotContact>();
+            result[1].Should().BeOfType<NonEmailAttributesChangedHubSpotContact>();
         }
     }
 }

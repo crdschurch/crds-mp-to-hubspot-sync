@@ -4,7 +4,8 @@ using Crossroads.Service.HubSpot.Sync.Core.Time;
 using Crossroads.Service.HubSpot.Sync.Core.Utilities;
 using Crossroads.Service.HubSpot.Sync.Data.HubSpot.Models.Request;
 using Crossroads.Service.HubSpot.Sync.Data.HubSpot.Models.Response;
-using Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto;
+using Crossroads.Service.HubSpot.Sync.Data.MongoDb.JobProcessing;
+using Crossroads.Service.HubSpot.Sync.Data.MongoDb.JobProcessing.Dto;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Moq;
@@ -31,35 +32,35 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Test.Services
         /// </summary>
         private const int OneSecond = 1000;
 
-        private readonly BulkContact[] _bulkContacts =
+        private readonly BulkHubSpotContact[] _bulkHubSpotContacts =
         {
-            new BulkContact { Email = "email@1.com", Properties = PopulateProperties()},
-            new BulkContact { Email = "email@2.com", Properties = PopulateProperties() },
-            new BulkContact { Email = "email@3.com", Properties = PopulateProperties() },
-            new BulkContact { Email = "email@4.com", Properties = PopulateProperties() },
-            new BulkContact { Email = "email@5.com", Properties = PopulateProperties() },
-            new BulkContact { Email = "email@6.com", Properties = PopulateProperties() },
-            new BulkContact { Email = "email@7.com", Properties = PopulateProperties() },
-            new BulkContact { Email = "email@8.com", Properties = PopulateProperties() },
-            new BulkContact { Email = "email@9.com", Properties = PopulateProperties() }
+            new BulkHubSpotContact { Email = "email@1.com", Properties = PopulateProperties()},
+            new BulkHubSpotContact { Email = "email@2.com", Properties = PopulateProperties() },
+            new BulkHubSpotContact { Email = "email@3.com", Properties = PopulateProperties() },
+            new BulkHubSpotContact { Email = "email@4.com", Properties = PopulateProperties() },
+            new BulkHubSpotContact { Email = "email@5.com", Properties = PopulateProperties() },
+            new BulkHubSpotContact { Email = "email@6.com", Properties = PopulateProperties() },
+            new BulkHubSpotContact { Email = "email@7.com", Properties = PopulateProperties() },
+            new BulkHubSpotContact { Email = "email@8.com", Properties = PopulateProperties() },
+            new BulkHubSpotContact { Email = "email@9.com", Properties = PopulateProperties() }
         };
 
-        private static List<ContactProperty> PopulateProperties()
+        private static List<HubSpotContactProperty> PopulateProperties()
         {
-            return new List<ContactProperty> {new ContactProperty {Name = "email"}};
+            return new List<HubSpotContactProperty> {new HubSpotContactProperty {Name = "email"}};
         }
 
-        private readonly SerialContact[] _serialContacts =
+        private readonly SerialHubSpotContact[] _serialHubSpotContacts =
         {
-            new SerialContact { Email = "email@1.com", Properties = PopulateProperties() },
-            new SerialContact { Email = "email@2.com", Properties = PopulateProperties() },
-            new SerialContact { Email = "email@3.com", Properties = PopulateProperties() },
-            new SerialContact { Email = "email@4.com", Properties = PopulateProperties() },
-            new SerialContact { Email = "email@5.com", Properties = PopulateProperties() },
-            new SerialContact { Email = "email@6.com", Properties = PopulateProperties() },
-            new SerialContact { Email = "email@7.com", Properties = PopulateProperties() },
-            new SerialContact { Email = "email@8.com", Properties = PopulateProperties() },
-            new SerialContact { Email = "email@9.com", Properties = PopulateProperties() }
+            new SerialHubSpotContact { Email = "email@1.com", Properties = PopulateProperties() },
+            new SerialHubSpotContact { Email = "email@2.com", Properties = PopulateProperties() },
+            new SerialHubSpotContact { Email = "email@3.com", Properties = PopulateProperties() },
+            new SerialHubSpotContact { Email = "email@4.com", Properties = PopulateProperties() },
+            new SerialHubSpotContact { Email = "email@5.com", Properties = PopulateProperties() },
+            new SerialHubSpotContact { Email = "email@6.com", Properties = PopulateProperties() },
+            new SerialHubSpotContact { Email = "email@7.com", Properties = PopulateProperties() },
+            new SerialHubSpotContact { Email = "email@8.com", Properties = PopulateProperties() },
+            new SerialHubSpotContact { Email = "email@9.com", Properties = PopulateProperties() }
         };
         private readonly DateTime _utcNowMockDateTime = DateTime.Parse("2018-05-16T13:05:01");
 
@@ -80,29 +81,29 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Test.Services
         private void SetUpMockDefinitions(HttpStatusCode httpStatusCode, bool isNew = false)
         {
             var httpResponseMessage = new HttpResponseMessage(httpStatusCode);
-            _httpMock.Setup(http => http.Post(It.IsAny<string>(), It.IsAny<BulkContact[]>())).Returns(httpResponseMessage);
-            _httpMock.Setup(http => http.Post(It.IsAny<string>(), It.IsAny<SerialContact>())).Returns(httpResponseMessage);
+            _httpMock.Setup(http => http.Post(It.IsAny<string>(), It.IsAny<BulkHubSpotContact[]>())).Returns(httpResponseMessage);
+            _httpMock.Setup(http => http.Post(It.IsAny<string>(), It.IsAny<SerialHubSpotContact>())).Returns(httpResponseMessage);
             _httpMock.Setup(h => h.GetResponseContent<HubSpotException>(It.IsAny<HttpResponseMessage>())).Returns(new HubSpotException()); // for bulk/serial
-            _serializerMock.Setup(s => s.Serialize(It.IsAny<IContact>())).Returns("");
+            _serializerMock.Setup(s => s.Serialize(It.IsAny<IHubSpotContact>())).Returns("");
         }
 
-        private void HappyOrSadPathTruths(BulkSyncResult result, BulkContact[] contacts, int expectedBatchCount, int successCount, int failureCount)
+        private void HappyOrSadPathTruths(BulkSyncResult result, BulkHubSpotContact[] hubSpotContacts, int expectedBatchCount, int successCount, int failureCount)
         {
-            HappyOrSadPathTruths(result, contacts.Length, expectedBatchCount, successCount, failureCount);
+            HappyOrSadPathTruths(result, hubSpotContacts.Length, expectedBatchCount, successCount, failureCount);
 
             // assert data
             result.BatchCount.Should().Be(expectedBatchCount);
 
             // assert behavior
-            _httpMock.Verify(http => http.Post(It.IsAny<string>(), It.IsAny<BulkContact[]>()), Times.Exactly(expectedBatchCount));
+            _httpMock.Verify(http => http.Post(It.IsAny<string>(), It.IsAny<BulkHubSpotContact[]>()), Times.Exactly(expectedBatchCount));
         }
 
-        private void HappyOrSadPathTruths(SerialSyncResult result, SerialContact[] contacts, int successCount, int failureCount)
+        private void HappyOrSadPathTruths(SerialSyncResult result, SerialHubSpotContact[] hubSpotContacts, int successCount, int failureCount)
         {
-            HappyOrSadPathTruths(result, contacts.Length, contacts.Length, successCount, failureCount);
+            HappyOrSadPathTruths(result, hubSpotContacts.Length, hubSpotContacts.Length, successCount, failureCount);
 
             // assert behavior
-            _httpMock.Verify(http => http.Post(It.IsAny<string>(), It.IsAny<SerialContact>()), Times.Exactly(contacts.Length));
+            _httpMock.Verify(http => http.Post(It.IsAny<string>(), It.IsAny<SerialHubSpotContact>()), Times.Exactly(hubSpotContacts.Length));
         }
 
         private void HappyOrSadPathTruths(ISyncResult result, int contactCount, int numberOfRequests, int successCount, int failureCount)
@@ -129,10 +130,10 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Test.Services
             SetUpMockDefinitions(HttpStatusCode.Accepted);
 
             // act
-            var result = _fixture.BulkSync(_bulkContacts, batchSize: batchSize);
+            var result = _fixture.BulkSync(_bulkHubSpotContacts, batchSize: batchSize);
 
             // assert data
-            HappyOrSadPathTruths(result, _bulkContacts, expectedBatchCount, successCount: _bulkContacts.Length, failureCount: 0); // data and behavior
+            HappyOrSadPathTruths(result, _bulkHubSpotContacts, expectedBatchCount, successCount: _bulkHubSpotContacts.Length, failureCount: 0); // data and behavior
         }
 
         [Theory]
@@ -145,12 +146,12 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Test.Services
             SetUpMockDefinitions(httpStatusCode);
 
             // act
-            var result = _fixture.BulkSync(_bulkContacts, batchSize: batchSize);
+            var result = _fixture.BulkSync(_bulkHubSpotContacts, batchSize: batchSize);
 
             // assert data
             result.FailedBatches.Count.Should().Be(expectedBatchCount);
             result.FailedBatches.Count(fail => fail.HttpStatusCode == httpStatusCode).Should().Be(expectedBatchCount);
-            HappyOrSadPathTruths(result, _bulkContacts, expectedBatchCount, successCount: 0, failureCount: _bulkContacts.Length); // data and behavior
+            HappyOrSadPathTruths(result, _bulkHubSpotContacts, expectedBatchCount, successCount: 0, failureCount: _bulkHubSpotContacts.Length); // data and behavior
         }
 
         [Fact]
@@ -158,10 +159,10 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Test.Services
         {   // if we can't connect to HubSpot, let's hope the failure is temporal and try again later.
             // arrange
             SetUpMockDefinitions(HttpStatusCode.Ambiguous);
-            _httpMock.Setup(http => http.Post(It.IsAny<string>(), It.IsAny<BulkContact[]>())).Throws<HttpRequestException>();
+            _httpMock.Setup(http => http.Post(It.IsAny<string>(), It.IsAny<BulkHubSpotContact[]>())).Throws<HttpRequestException>();
 
             // act
-            Action action = () => _fixture.BulkSync(_bulkContacts);
+            Action action = () => _fixture.BulkSync(_bulkHubSpotContacts);
 
             action.Should().Throw<HttpRequestException>();
         }
@@ -174,7 +175,7 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Test.Services
         public void SerialCreateResult_HappyPath(int numberOfContactsToSync)
         {
             // arrange
-            var contacts = _serialContacts.Take(numberOfContactsToSync).ToArray();
+            var contacts = _serialHubSpotContacts.Take(numberOfContactsToSync).ToArray();
             SetUpMockDefinitions(HttpStatusCode.OK);
 
             // act
@@ -192,7 +193,7 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Test.Services
         public void SerialUpdateResult_HappyPath(int numberOfContactsToSync)
         {
             // arrange
-            var contacts = _serialContacts.Take(numberOfContactsToSync).ToArray();
+            var contacts = _serialHubSpotContacts.Take(numberOfContactsToSync).ToArray();
             SetUpMockDefinitions(HttpStatusCode.NoContent);
 
             // act
@@ -210,7 +211,7 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Test.Services
         public void SerialCreateResult_When_All_Requests_Have_A_Negative_Result(HttpStatusCode httpStatusCode, int numberOfContactsToSync)
         {
             // arrange
-            var contacts = _serialContacts.Take(numberOfContactsToSync).ToArray();
+            var contacts = _serialHubSpotContacts.Take(numberOfContactsToSync).ToArray();
             SetUpMockDefinitions(httpStatusCode);
 
             // act
@@ -230,7 +231,7 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Test.Services
         public void SerialUpdateResult_When_All_Requests_Have_A_Negative_Result(HttpStatusCode httpStatusCode, int numberOfContactsToSync)
         {
             // arrange
-            var contacts = _serialContacts.Take(numberOfContactsToSync).ToArray();
+            var contacts = _serialHubSpotContacts.Take(numberOfContactsToSync).ToArray();
             SetUpMockDefinitions(httpStatusCode);
 
             // act
@@ -249,14 +250,14 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Test.Services
             SetUpMockDefinitions(HttpStatusCode.Conflict);
 
             // act
-            var result = _fixture.SerialCreate(_serialContacts);
+            var result = _fixture.SerialCreate(_serialHubSpotContacts);
 
             // assert data
             result.Failures.Count.Should().Be(0);
-            result.EmailAddressesAlreadyExist.Count.Should().Be(_serialContacts.Length);
-            result.EmailAddressAlreadyExistsCount.Should().Be(_serialContacts.Length);
+            result.EmailAddressesAlreadyExist.Count.Should().Be(_serialHubSpotContacts.Length);
+            result.EmailAddressAlreadyExistsCount.Should().Be(_serialHubSpotContacts.Length);
 
-            HappyOrSadPathTruths(result, _serialContacts, successCount: 0, failureCount: 0); // data and behavior
+            HappyOrSadPathTruths(result, _serialHubSpotContacts, successCount: 0, failureCount: 0); // data and behavior
         }
 
         [Fact]
@@ -266,14 +267,14 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Test.Services
             SetUpMockDefinitions(HttpStatusCode.NotFound);
 
             // act
-            var result = _fixture.SerialUpdate(_serialContacts);
+            var result = _fixture.SerialUpdate(_serialHubSpotContacts);
 
             // assert data
             result.Failures.Count.Should().Be(0);
-            result.EmailAddressesDoNotExist.Count.Should().Be(_serialContacts.Length);
-            result.EmailAddressDoesNotExistCount.Should().Be(_serialContacts.Length);
+            result.EmailAddressesDoNotExist.Count.Should().Be(_serialHubSpotContacts.Length);
+            result.EmailAddressDoesNotExistCount.Should().Be(_serialHubSpotContacts.Length);
 
-            HappyOrSadPathTruths(result, _serialContacts, successCount: 0, failureCount: 0); // data and behavior
+            HappyOrSadPathTruths(result, _serialHubSpotContacts, successCount: 0, failureCount: 0); // data and behavior
         }
 
         [Fact]
@@ -281,10 +282,10 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Test.Services
         {   // if we can't connect to HubSpot, let's hope the failure is temporal and try again later.
             // arrange
             SetUpMockDefinitions(HttpStatusCode.Ambiguous);
-            _httpMock.Setup(http => http.Post(It.IsAny<string>(), It.IsAny<SerialContact>())).Throws<HttpRequestException>();
+            _httpMock.Setup(http => http.Post(It.IsAny<string>(), It.IsAny<SerialHubSpotContact>())).Throws<HttpRequestException>();
 
             // act
-            Action action = () => _fixture.SerialCreate(_serialContacts);
+            Action action = () => _fixture.SerialCreate(_serialHubSpotContacts);
 
             action.Should().Throw<HttpRequestException>();
         }
@@ -294,10 +295,10 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Test.Services
         {   // if we can't connect to HubSpot, let's hope the failure is temporal and try again later.
             // arrange
             SetUpMockDefinitions(HttpStatusCode.Ambiguous);
-            _httpMock.Setup(http => http.Post(It.IsAny<string>(), It.IsAny<SerialContact>())).Throws<HttpRequestException>();
+            _httpMock.Setup(http => http.Post(It.IsAny<string>(), It.IsAny<SerialHubSpotContact>())).Throws<HttpRequestException>();
 
             // act
-            Action action = () => _fixture.SerialUpdate(_serialContacts);
+            Action action = () => _fixture.SerialUpdate(_serialHubSpotContacts);
 
             action.Should().Throw<HttpRequestException>();
         }

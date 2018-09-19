@@ -26,20 +26,20 @@ namespace Crossroads.Service.HubSpot.Sync.Core.Utilities.Impl
         public HttpResponseMessage Post<TDto>(string requestUriPathAndQuery, TDto postBody)
         {
             var fullUrl = $"{_httpClient.BaseAddress}{requestUriPathAndQuery}";
-            var postBodyJson = _jsonSerializer.Serialize(postBody);
+            var jsonPostBody = _jsonSerializer.Serialize(postBody);
 
             using (_logger.BeginScope(CoreEvent.Http.Post))
             {
                 _logger.LogInformation(CoreEvent.Http.Post, $"Begin POST to {fullUrl}...");
-                _logger.LogInformation(CoreEvent.Http.Post, $"Post body: {postBodyJson}");
+                _logger.LogInformation(CoreEvent.Http.Post, $"Post body: {jsonPostBody}");
                 try
                 {
-                    var content = new StringContent(postBodyJson, Encoding.UTF8, "application/json");
+                    var content = new StringContent(jsonPostBody, Encoding.UTF8, "application/json");
                     return _httpClient.PostAsync(requestUriPathAndQuery, content).Result;
                 }
                 catch (Exception exc) // network error
                 {
-                    Log("Exception occurred trying to reach the API endpoint. Rethrowing to ensure we abort the current operation.", fullUrl, postBodyJson, exc);
+                    Log("Exception occurred trying to reach the API endpoint. Rethrowing to ensure we abort the current operation.", fullUrl, jsonPostBody, exc);
                     throw;
                 }
             }

@@ -13,23 +13,19 @@ using Crossroads.Service.HubSpot.Sync.Core.Utilities;
 using Crossroads.Service.HubSpot.Sync.Core.Utilities.Guid;
 using Crossroads.Service.HubSpot.Sync.Core.Utilities.Guid.Impl;
 using Crossroads.Service.HubSpot.Sync.Core.Utilities.Impl;
-using Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing;
-using Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Impl;
+using Crossroads.Service.HubSpot.Sync.Data.MongoDb.JobProcessing;
+using Crossroads.Service.HubSpot.Sync.Data.MongoDb.JobProcessing.Impl;
 using Crossroads.Service.HubSpot.Sync.Data.MP;
 using Crossroads.Service.HubSpot.Sync.Data.MP.Impl;
-using Crossroads.Service.HubSpot.Sync.LiteDb.Configuration;
-using Crossroads.Service.HubSpot.Sync.LiteDb.Configuration.Impl;
-using Crossroads.Service.HubSpot.Sync.LiteDB;
-using Crossroads.Service.HubSpot.Sync.LiteDB.Impl;
 using Crossroads.Web.Common.Configuration;
 using DalSoft.Hosting.BackgroundQueue.DependencyInjection;
 using FluentValidation.AspNetCore;
-using LiteDB;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using MongoDB.Driver;
 using System;
 using System.Net.Http;
 using JsonSerializer = Crossroads.Service.HubSpot.Sync.Core.Serialization.Impl.JsonSerializer;
@@ -53,7 +49,7 @@ namespace Crossroads.Service.HubSpot.Sync.App
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddMvc().AddFluentValidation(fv => fv.RegisterValidatorsFromAssemblyContaining<SyncActivityValidator>()); ;
+            services.AddMvc().AddFluentValidation(fv => fv.RegisterValidatorsFromAssemblyContaining<ActivityValidator>()); ;
             services.AddRouting(options => options.LowercaseUrls = false);
             services.AddCors();
 
@@ -68,12 +64,10 @@ namespace Crossroads.Service.HubSpot.Sync.App
             services.AddSingleton<IMinistryPlatformContactRepository, MinistryPlatformContactRepository>();
             services.AddSingleton<ISyncMpContactsToHubSpotService, SyncMpContactsToHubSpotService>();
             services.AddSingleton<IPrepareMpDataForHubSpot, PrepareMpDataForHubSpot>();
-            services.AddSingleton(new LiteDatabase($"filename={Configuration["LiteDbPath"]};utc=true"));
-            services.AddSingleton<ILiteDbRepository, LiteDbRepositoryWrapper>();
-            services.AddSingleton<ILiteDbConfigurationProvider, LiteDbConfigurationProvider>();
+            services.AddSingleton(sp => new MongoClient(Configuration["MONGO_DB_CONN"]).GetDatabase("hubspotsync")); // Mongo stores UTC by default
             services.AddSingleton<IJobRepository, JobRepository>();
             services.AddSingleton<IConfigurationService, ConfigurationService>();
-            services.AddSingleton<ICleanUpSyncActivity, CleanUpSyncActivity>();
+            services.AddSingleton<ICleanUpActivity, CleanUpActivity>();
             services.AddSingleton(Configuration);
             services.Configure<InauguralSync>(Configuration.GetSection("InauguralSync"));
             services.Configure<DocumentDbSettings>(Configuration.GetSection("DocumentDbSettings"));

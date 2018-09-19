@@ -18,6 +18,10 @@ namespace Crossroads.Service.HubSpot.Sync.Data.MP.Dto
     {
         public string PropertyName { get; set; }
 
+        /// <summary>
+        /// Is really only significant for the Email attribute value when the Ministry Platform Contact's
+        /// email address has changed.
+        /// </summary>
         public string PreviousValue { get; set; }
 
         public string NewValue { get; set; }

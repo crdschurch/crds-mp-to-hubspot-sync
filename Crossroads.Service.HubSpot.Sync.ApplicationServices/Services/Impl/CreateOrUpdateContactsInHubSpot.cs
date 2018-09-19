@@ -3,7 +3,8 @@ using Crossroads.Service.HubSpot.Sync.Core.Time;
 using Crossroads.Service.HubSpot.Sync.Core.Utilities;
 using Crossroads.Service.HubSpot.Sync.Data.HubSpot.Models.Request;
 using Crossroads.Service.HubSpot.Sync.Data.HubSpot.Models.Response;
-using Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Dto;
+using Crossroads.Service.HubSpot.Sync.Data.MongoDb.JobProcessing;
+using Crossroads.Service.HubSpot.Sync.Data.MongoDb.JobProcessing.Dto;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Linq;
@@ -23,8 +24,7 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
         private readonly string _hubSpotApiKey;
         private readonly ILogger<CreateOrUpdateContactsInHubSpot> _logger;
 
-        public CreateOrUpdateContactsInHubSpot(IHttpClientFacade http, IClock clock, IJsonSerializer serializer, ISleep sleeper, string hubSpotApiKey,
-            ILogger<CreateOrUpdateContactsInHubSpot> logger)
+        public CreateOrUpdateContactsInHubSpot(IHttpClientFacade http, IClock clock, IJsonSerializer serializer, ISleep sleeper, string hubSpotApiKey, ILogger<CreateOrUpdateContactsInHubSpot> logger)
         {
             _http = http ?? throw new ArgumentNullException(nameof(http));
             _clock = clock ?? throw new ArgumentNullException(nameof(clock));
@@ -37,21 +37,21 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
         /// <summary>
         /// https://developers.hubspot.com/docs/methods/contacts/batch_create_or_update
         /// </summary>
-        /// <param name="contacts">Contacts to create/update in HubSpot.</param>
+        /// <param name="hubSpotContacts">Contacts to create/update in HubSpot.</param>
         /// <param name="batchSize">Number of contacts to send to HubSpot per request.</param>
-        public BulkSyncResult BulkSync(BulkContact[] contacts, int batchSize = DefaultBatchSize)
+        public BulkSyncResult BulkSync(BulkHubSpotContact[] hubSpotContacts, int batchSize = DefaultBatchSize)
         {
             var run = new BulkSyncResult(_clock.UtcNow)
             {
-                TotalContacts = contacts.Length,
-                BatchCount = CalculateNumberOfBatches(contacts, batchSize)
+                TotalContacts = hubSpotContacts.Length,
+                BatchCount = CalculateNumberOfBatches(hubSpotContacts, batchSize)
             };
 
             try
             {
                 for (int currentBatchNumber = 0; currentBatchNumber < run.BatchCount; currentBatchNumber++)
                 {
-                    var contactBatch = contacts.Skip(currentBatchNumber * batchSize).Take(batchSize).ToArray(); // extract the relevant group of contacts
+                    var contactBatch = hubSpotContacts.Skip(currentBatchNumber * batchSize).Take(batchSize).ToArray(); // extract the relevant group of contacts
                     var response = _http.Post($"contacts/v1/contact/batch?hapikey={_hubSpotApiKey}", contactBatch);
 
                     switch (response.StatusCode)
@@ -68,7 +68,7 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
                                 BatchNumber = currentBatchNumber + 1,
                                 HttpStatusCode = response.StatusCode,
                                 Exception = _http.GetResponseContent<HubSpotException>(response),
-                                Contacts = contactBatch
+                                HubSpotContacts = contactBatch
                             });
 
                             // cast to print out the HTTP status code, just in case what's returned isn't
@@ -90,37 +90,37 @@ More details will be available in the serial processing logs.");
             }
         }
 
-        private int CalculateNumberOfBatches(BulkContact[] contacts, int prescribedBatchSize)
+        private int CalculateNumberOfBatches(BulkHubSpotContact[] hubSpotContacts, int prescribedBatchSize)
         {
-            return (contacts.Length / prescribedBatchSize) + (contacts.Length % prescribedBatchSize > 0 ? 1 : 0);
+            return (hubSpotContacts.Length / prescribedBatchSize) + (hubSpotContacts.Length % prescribedBatchSize > 0 ? 1 : 0);
         }
 
         /// <summary>
         /// https://developers.hubspot.com/docs/methods/contacts/create_contact
         /// </summary>
-        public SerialSyncResult SerialCreate(SerialContact[] contacts)
+        public SerialSyncResult SerialCreate(SerialHubSpotContact[] hubSpotContacts)
         {
-            var run = new SerialSyncResult(_clock.UtcNow) { TotalContacts = contacts.Length };
+            var run = new SerialSyncResult(_clock.UtcNow) { TotalContacts = hubSpotContacts.Length };
             try
             {
-                for (int currentContactIndex = 0; currentContactIndex < contacts.Length; currentContactIndex++)
+                for (int currentContactIndex = 0; currentContactIndex < hubSpotContacts.Length; currentContactIndex++)
                 {
-                    var contact = contacts[currentContactIndex];
+                    var contact = hubSpotContacts[currentContactIndex];
                     var response = _http.Post($"contacts/v1/contact?hapikey={_hubSpotApiKey}", contact);
 
                     switch (response.StatusCode)
                     {
                         case HttpStatusCode.OK: // 200; create endpoint
-                            _logger.LogInformation($"Created: contact {currentContactIndex + 1} of {contacts.Length}");
+                            _logger.LogInformation($"Created: contact {currentContactIndex + 1} of {hubSpotContacts.Length}");
                             run.SuccessCount++;
                             run.InsertCount++;
                             break;
-                        case HttpStatusCode.Conflict: // 409; create endpoint; already exists -- when a contact attempts to update their email address to one already claimed
+                        case HttpStatusCode.Conflict: // 409; create endpoint; already exists -- when we attempt to create a contact with an email address that has already been claimed
                             run.EmailAddressesAlreadyExist.Add(contact);
                             run.EmailAddressAlreadyExistsCount++;
                             break;
                         default: // contact was rejected for create
-                            SetFailureData(run, response, contact, contacts.Length, currentContactIndex);
+                            SetFailureData(run, response, contact, hubSpotContacts.Length, currentContactIndex);
                             break;
                     }
 
@@ -138,15 +138,15 @@ More details will be available in the serial processing logs.");
         /// <summary>
         /// https://developers.hubspot.com/docs/methods/contacts/update_contact-by-email
         /// </summary>
-        public SerialSyncResult SerialUpdate(SerialContact[] contacts)
+        public SerialSyncResult SerialUpdate(SerialHubSpotContact[] hubSpotContacts)
         {
-            var run = new SerialSyncResult(_clock.UtcNow) { TotalContacts = contacts.Length };
+            var run = new SerialSyncResult(_clock.UtcNow) { TotalContacts = hubSpotContacts.Length };
             try
             {
-                for (int currentContactIndex = 0; currentContactIndex < contacts.Length; currentContactIndex++)
+                for (int currentContactIndex = 0; currentContactIndex < hubSpotContacts.Length; currentContactIndex++)
                 {
-                    var contact = contacts[currentContactIndex];
-                    SerialUpdate(currentContactIndex, contact, contacts.Length, run);
+                    var contact = hubSpotContacts[currentContactIndex];
+                    SerialUpdate(currentContactIndex, contact, hubSpotContacts.Length, run);
                     PumpTheBreaksEveryNRequestsToAvoid429Exceptions(currentContactIndex + 1);
                 }
 
@@ -158,9 +158,9 @@ More details will be available in the serial processing logs.");
             }
         }
 
-        private SerialSyncResult SerialUpdate(int currentContactIndex, SerialContact contact, int contactCount, SerialSyncResult run)
+        private SerialSyncResult SerialUpdate(int currentContactIndex, SerialHubSpotContact hubSpotContact, int contactCount, SerialSyncResult run)
         {
-            var response = _http.Post($"contacts/v1/contact/email/{contact.Email}/profile?hapikey={_hubSpotApiKey}", contact);
+            var response = _http.Post($"contacts/v1/contact/email/{hubSpotContact.Email}/profile?hapikey={_hubSpotApiKey}", hubSpotContact);
 
             switch (response.StatusCode)
             {
@@ -170,15 +170,15 @@ More details will be available in the serial processing logs.");
                     run.UpdateCount++;
                     break;
                 case HttpStatusCode.NotFound: // 404; update only endpoint; contact does not exist
-                    run.EmailAddressesDoNotExist.Add(contact);
+                    run.EmailAddressesDoNotExist.Add(hubSpotContact);
                     run.EmailAddressDoesNotExistCount++;
                     break;
                 case HttpStatusCode.Conflict: // 409; update endpoint; already exists -- when a contact attempts to update their email address to one already claimed
-                    run.EmailAddressesAlreadyExist.Add(contact);
+                    run.EmailAddressesAlreadyExist.Add(hubSpotContact);
                     run.EmailAddressAlreadyExistsCount++;
                     break;
                 default: // contact was rejected for update (application exception)
-                    SetFailureData(run, response, contact, contactCount, currentContactIndex);
+                    SetFailureData(run, response, hubSpotContact, contactCount, currentContactIndex);
                     break;
             }
 
@@ -197,21 +197,21 @@ More details will be available in the serial processing logs.");
         /// 2) Delete contact by VID (acquired by old email address)
         /// 3) Update contact in HubSpot with new email address in both the url and the post body
         /// </summary>
-        public SerialSyncResult ReconcileConflicts(SerialContact[] contacts)
+        public SerialSyncResult ReconcileConflicts(SerialHubSpotContact[] hubSpotContacts)
         {
             const int requestsPerReconciliation = 3, requestsPerSecond = 9;
             int reconciliationIteration = 1;
 
-            var run = new SerialSyncResult(_clock.UtcNow) { TotalContacts = contacts.Length };
+            var run = new SerialSyncResult(_clock.UtcNow) { TotalContacts = hubSpotContacts.Length };
             try
             {
-                for (int currentContactIndex = 0; currentContactIndex < contacts.Length; currentContactIndex++)
+                for (int currentContactIndex = 0; currentContactIndex < hubSpotContacts.Length; currentContactIndex++)
                 {
-                    var contact = contacts[currentContactIndex];
+                    var contact = hubSpotContacts[currentContactIndex];
                     var hubSpotContact = SerialGet<HubSpotVidResult>(contact, run); // HubSpot request #1
-                    run = SerialDelete(currentContactIndex, contact, hubSpotContact, contacts.Length, run); // HubSpot request #2
+                    run = SerialDelete(currentContactIndex, contact, hubSpotContact, hubSpotContacts.Length, run); // HubSpot request #2
                     contact.Email = contact.Properties.First(p => p.Name == "email").Value; // reset email to the existing one and re-run it
-                    run = SerialUpdate(currentContactIndex, contact, contacts.Length, run); // HubSpot request #3
+                    run = SerialUpdate(currentContactIndex, contact, hubSpotContacts.Length, run); // HubSpot request #3
 
                     PumpTheBreaksEveryNRequestsToAvoid429Exceptions(reconciliationIteration * requestsPerReconciliation, requestsPerSecond);
 
@@ -229,35 +229,35 @@ More details will be available in the serial processing logs.");
             }
         }
 
-        private TDto SerialGet<TDto>(SerialContact contact, SerialSyncResult run)
+        private TDto SerialGet<TDto>(SerialHubSpotContact hubSpotContact, SerialSyncResult run)
         {
-            var response = _http.Get($"contacts/v1/contact/email/{contact.Email}/profile?hapikey={_hubSpotApiKey}&property=vid");
+            var response = _http.Get($"contacts/v1/contact/email/{hubSpotContact.Email}/profile?hapikey={_hubSpotApiKey}&property=vid");
             run.GetCount++;
             var dto = default(TDto);
 
             switch (response.StatusCode)
             {
                 case HttpStatusCode.OK: // 200; update only endpoint
-                    _logger.LogInformation($"Retrieved: contact {contact.Email}.\r\njson: {dto}");
+                    _logger.LogInformation($"Retrieved: contact {hubSpotContact.Email}.\r\njson: {dto}");
                     dto = _http.GetResponseContent<TDto>(response);
                     break;
                 case HttpStatusCode.NotFound: // 404; contact with supplied email address does not exist
-                    _logger.LogWarning($"Not Found. Contact does not exist\r\njson: {_serializer.Serialize(contact)}");
+                    _logger.LogWarning($"Not Found. Contact does not exist\r\njson: {_serializer.Serialize(hubSpotContact)}");
                     break;
                 default: // could not get contact
-                    _logger.LogWarning($"Exception occurred while GETting contact [{contact.Email}]");
+                    _logger.LogWarning($"Exception occurred while GETting contact [{hubSpotContact.Email}]");
                     break;
             }
 
             return dto;
         }
 
-        private SerialSyncResult SerialDelete(int currentContactIndex, SerialContact contact, HubSpotVidResult hubSpotContact, int contactCount, SerialSyncResult run)
+        private SerialSyncResult SerialDelete(int currentContactIndex, SerialHubSpotContact hubSpotContact, HubSpotVidResult hubSpotVidResult, int contactCount, SerialSyncResult run)
         {
-            if (hubSpotContact == null)
+            if (hubSpotVidResult == null)
                 return run;
 
-            var response = _http.Delete($"contacts/v1/contact/vid/{hubSpotContact.ContactVid}?hapikey={_hubSpotApiKey}");
+            var response = _http.Delete($"contacts/v1/contact/vid/{hubSpotVidResult.ContactVid}?hapikey={_hubSpotApiKey}");
             run.DeleteCount++;
 
             switch (response.StatusCode)
@@ -266,27 +266,27 @@ More details will be available in the serial processing logs.");
                     _logger.LogInformation($"Deleted: contact {currentContactIndex + 1} of {contactCount}");
                     break;
                 case HttpStatusCode.NotFound: // 404; when the contact vid does not exist
-                    _logger.LogWarning($"No contact in HubSpot to delete.\r\njson: {_serializer.Serialize(contact)}");
+                    _logger.LogWarning($"No contact in HubSpot to delete.\r\njson: {_serializer.Serialize(hubSpotContact)}");
                     break;
                 default: // contact was rejected for update (application exception)
-                    SetFailureData(run, response, contact, contactCount, currentContactIndex);
+                    SetFailureData(run, response, hubSpotContact, contactCount, currentContactIndex);
                     break;
             }
 
             return run;
         }
 
-        private void SetFailureData(SerialSyncResult run, HttpResponseMessage response, IContact contact, int contactLength, int currentContactIndex)
+        private void SetFailureData(SerialSyncResult run, HttpResponseMessage response, IHubSpotContact hubSpotContact, int contactLength, int currentContactIndex)
         {
             run.FailureCount++;
             var failure = new SerialSyncFailure
             {
                 HttpStatusCode = response.StatusCode,
                 Exception = _http.GetResponseContent<HubSpotException>(response),
-                Contact = contact
+                HubSpotContact = hubSpotContact
             };
             run.Failures.Add(failure);
-            LogContactFailure(failure, contact, currentContactIndex, contactLength);
+            LogContactFailure(failure, hubSpotContact, currentContactIndex, contactLength);
         }
 
         /// <summary>
@@ -305,7 +305,7 @@ More details will be available in the serial processing logs.");
             }
         }
 
-        private void LogContactFailure(IFailureDetails failure, IContact contact, int currentContactIndex, int contactCount)
+        private void LogContactFailure(IFailureDetails failure, IHubSpotContact hubSpotContact, int currentContactIndex, int contactCount)
         {
             // cast to print out the HTTP status code, just in case what's returned isn't
             // defined in the enum https://stackoverflow.com/a/22645395
@@ -315,7 +315,7 @@ More details will be available in the serial processing logs.");
 httpstatuscode: {(int)failure.HttpStatusCode}
 issue: {hubSpotException?.Message} for ({hubSpotException?.ValidationResults?.FirstOrDefault()?.Name})
 error: {hubSpotException?.ValidationResults?.FirstOrDefault()?.Error}
-contact: {_serializer.Serialize(contact)}");
+contact: {_serializer.Serialize(hubSpotContact)}");
         }
     }
 }

@@ -1,13 +1,14 @@
-﻿using Crossroads.Service.HubSpot.Sync.ApplicationServices.Logging;
+﻿using Crossroads.Service.HubSpot.Sync.ApplicationServices.Configuration;
+using Crossroads.Service.HubSpot.Sync.ApplicationServices.Logging;
 using Crossroads.Service.HubSpot.Sync.ApplicationServices.Services;
-using Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing.Enum;
+using DalSoft.Hosting.BackgroundQueue;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Linq;
-using Crossroads.Service.HubSpot.Sync.ApplicationServices.Configuration;
-using Crossroads.Service.HubSpot.Sync.Data.LiteDb.JobProcessing;
-using DalSoft.Hosting.BackgroundQueue;
+using Crossroads.Service.HubSpot.Sync.Data.MongoDb.JobProcessing;
+using Crossroads.Service.HubSpot.Sync.Data.MongoDb.JobProcessing.Dto;
+using Crossroads.Service.HubSpot.Sync.Data.MongoDb.JobProcessing.Enum;
 
 namespace Crossroads.Service.HubSpot.Sync.App.Controllers
 {
@@ -49,9 +50,13 @@ namespace Crossroads.Service.HubSpot.Sync.App.Controllers
             {
                 try
                 {
-                    _backgroundQueue.Enqueue(async cancellationToken => await _syncService.Sync());
+                    var clickHereToViewProgress = $@"Click <a target=""blank"" href=""{Url.Action("ViewActivityState")}"">here</a> to view progress.";
+                    var activityProgress = _configurationService.GetCurrentActivityProgress();
+                    if (activityProgress.ActivityState == ActivityState.Processing)
+                        return Content($"The HubSpot sync job is already processing. {clickHereToViewProgress}", "text/html");
 
-                    return Ok();
+                    _backgroundQueue.Enqueue(async cancellationToken => await _syncService.Sync());
+                    return Content($"HubSpot sync job is now processing. {clickHereToViewProgress}", "text/html");
                 }
                 catch (Exception exc)
                 {
@@ -63,13 +68,14 @@ namespace Crossroads.Service.HubSpot.Sync.App.Controllers
 
         [HttpGet]
         [Route("state")]
-        public IActionResult ViewJobProcessingState()
+        public IActionResult ViewActivityState()
         {
             using (_logger.BeginScope(AppEvent.Web.ViewJobProcessingState))
             {
                 try
                 {
-                    return Content($"Current state: {_configurationService.GetCurrentJobProcessingState()}");
+                    var progress = _configurationService.GetCurrentActivityProgress();
+                    return Content(progress.HtmlPrint(), "text/html");
                 }
                 catch (Exception exc)
                 {
@@ -80,16 +86,15 @@ namespace Crossroads.Service.HubSpot.Sync.App.Controllers
         }
 
         [HttpPost]
-        [Route("state/reset")]
-        public IActionResult ResetJobProcessingState()
+        [Route("state")]
+        public IActionResult ResetActivityState()
         {
             using (_logger.BeginScope(AppEvent.Web.ResetJobProcessingState))
             {
                 try
                 {
-                    _jobRepository.SetSyncJobProcessingState(SyncProcessingState.Idle);
-
-                    return Ok();
+                    _jobRepository.PersistActivityProgress(new ActivityProgress {ActivityState = ActivityState.Idle});
+                    return Content($"Activity state has been reset to 'Idle'.", "text/html");
                 }
                 catch (Exception exc)
                 {
@@ -107,12 +112,12 @@ namespace Crossroads.Service.HubSpot.Sync.App.Controllers
             {
                 try
                 {
-                    var dates = _configurationService.GetLastSuccessfulSyncDates();
+                    var dates = _configurationService.GetLastSuccessfulOperationDates();
                     return Content(
-                        $@"Last successful sync dates<br/>
+                        $@"<strong>Last successful operation dates</strong> (listed by order of execution)<br/>
+                        Age/Grade process date: {dates.AgeAndGradeProcessDate.ToLocalTime()}<br />
                         Registration: {dates.RegistrationSyncDate.ToLocalTime()}<br/>
                         Core update: {dates.CoreUpdateSyncDate.ToLocalTime()}<br />
-                        Age/Grade process date: {dates.AgeAndGradeProcessDate.ToLocalTime()}<br />
                         Age/Grade sync date: {dates.AgeAndGradeSyncDate.ToLocalTime()}",
                         "text/html");
                 }
@@ -144,7 +149,7 @@ namespace Crossroads.Service.HubSpot.Sync.App.Controllers
 
         [HttpGet]
         [Route("viewall")] // maybe create a view later
-        public IActionResult ViewActivities(int limit = 20)
+        public IActionResult ViewActivities(int limit = 144)
         {
             using (_logger.BeginScope(AppEvent.Web.ViewAllSyncActivities))
             {
@@ -171,7 +176,7 @@ namespace Crossroads.Service.HubSpot.Sync.App.Controllers
             {
                 try
                 {
-                    if (_configurationService.GetCurrentJobProcessingState() == SyncProcessingState.Processing)
+                    if (_configurationService.GetCurrentActivityProgress().ActivityState == ActivityState.Processing)
                         return Content("Job is currently processing. Refresh later to see the latest sync results.");
 
                     return Content(_jobRepository.GetMostRecentActivity(), "application/json");

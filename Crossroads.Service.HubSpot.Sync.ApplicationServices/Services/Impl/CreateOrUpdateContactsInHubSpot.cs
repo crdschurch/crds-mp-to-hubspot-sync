@@ -107,7 +107,7 @@ More details will be available in the serial processing logs.");
                 {
                     var contact = hubSpotContacts[currentContactIndex];
                     var response = _http.Post($"contacts/v1/contact?hapikey={_hubSpotApiKey}", contact);
-
+                    Console.WriteLine(contact.Email);
                     switch (response.StatusCode)
                     {
                         case HttpStatusCode.OK: // 200; create endpoint

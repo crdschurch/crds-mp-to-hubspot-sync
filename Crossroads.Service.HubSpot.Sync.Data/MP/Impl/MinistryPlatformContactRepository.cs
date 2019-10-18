@@ -114,6 +114,7 @@ namespace Crossroads.Service.HubSpot.Sync.Data.MP.Impl
         public IDictionary<string, List<CoreUpdateMpContactDto>> GetAuditedContactUpdates(DateTime lastSuccessfulSyncDateUtc)
         {
             const string storedProcedureName = "api_crds_get_mp_contact_updates_for_hubspot";
+            //var lastSuccessfulSyncDateLocal = lastSuccessfulSyncDateUtc.ToLocalTime();
             Log(storedProcedureName, lastSuccessfulSyncDateUtc, "Fetching MP contacts with recently updated data via stored proc.");
 
             try

@@ -67,6 +67,8 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
                 // set job processing state; get last successful sync dates
                 _jobRepository.PersistActivityProgress(activityProgress = new ActivityProgress { ActivityState = ActivityState.Processing });
                 var operationDates = activity.PreviousOperationDates = _configurationService.GetLastSuccessfulOperationDates();
+                Console.WriteLine("Got last successful operation dates");
+
                 var ageGradeDeltaLog = default(ChildAgeAndGradeDeltaLogDto);
 
                 Util.TryCatchSwallow(() => { // running this in advance of the create process with the express purpose of avoiding create/update race conditions when we consume the results for update
@@ -80,6 +82,7 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
                     operationDates.AgeAndGradeSyncDate = ageGradeDeltaLog.SyncCompletedUtc ?? default(DateTime); // go ahead and set in case there's nothing to do
                     _jobRepository.PersistLastSuccessfulOperationDates(operationDates);
                     PersistActivityProgress(activityProgress, OperationName.AgeGradeDataCalculationInMp, OperationState.Completed);
+                    Console.WriteLine("Finished CalculateAndPersistChildAgeGradeDataByHousehold");
                 }, () => {
                     _logger.LogWarning("Age/grade calculation and persistence operation aborted.");
                     PersistActivityProgress(activityProgress, OperationName.AgeGradeDataCalculationInMp, OperationState.Aborted);
@@ -96,6 +99,7 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
                     }
                     else
                         PersistActivityProgress(activityProgress, OperationName.NewContactRegistrationSync, OperationState.CompletedButWithIssues, operationDuration: activity.NewRegistrationSyncOperation.Execution.Duration);
+                    Console.WriteLine("Finished SyncNewRegistrations");
                 }, () => {
                     _logger.LogWarning("Sync new registrations operation aborted.");
                     PersistActivityProgress(activityProgress, OperationName.NewContactRegistrationSync, OperationState.Aborted, operationDuration: activity.NewRegistrationSyncOperation.Execution.Duration);
@@ -112,6 +116,7 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
                     }
                     else
                         PersistActivityProgress(activityProgress, OperationName.CoreContactAttributeUpdateSync, OperationState.CompletedButWithIssues, operationDuration: activity.CoreContactAttributeSyncOperation.Execution.Duration);
+                    Console.WriteLine("Finished SyncCoreUpdates");
                 }, () => {
                     _logger.LogWarning("Sync core updates operation aborted.");
                     PersistActivityProgress(activityProgress, OperationName.CoreContactAttributeUpdateSync, OperationState.Aborted, operationDuration: activity.CoreContactAttributeSyncOperation.Execution.Duration);
@@ -129,6 +134,7 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
                     }
                     else
                         PersistActivityProgress(activityProgress, OperationName.AgeGradeDataSync, OperationState.CompletedButWithIssues, operationDuration: activity.ChildAgeAndGradeSyncOperation.Execution.Duration);
+                    Console.WriteLine("Finished SyncChildAgeAndGradeData");
                 }, () => {
                     _logger.LogWarning("Sync age/grade data operation aborted.");
                     PersistActivityProgress(activityProgress, OperationName.AgeGradeDataSync, OperationState.Aborted, operationDuration: activity.ChildAgeAndGradeSyncOperation.Execution.Duration);

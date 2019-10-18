@@ -22,6 +22,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Integration|AnyCPU'" />
   <ItemGroup>
     <Folder Include="wwwroot\" />
+    <Folder Include="~\logs\" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="AutoMapper" Version="7.0.1" />
@@ -37,5 +38,11 @@
   <ItemGroup>
     <ProjectReference Include="..\Crossroads.Service.HubSpot.Sync.ApplicationServices\Crossroads.Service.HubSpot.Sync.ApplicationServices.csproj" />
     <ProjectReference Include="..\Crossroads.Service.HubSpot.Sync.Core\Crossroads.Service.HubSpot.Sync.Core.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Remove="~\logs\mp-hubspot-sync-app.log" />
+    <None Remove="~\logs\mp-hubspot-sync-app.log20190415" />
+    <None Remove="~\logs\mp-hubspot-sync-app.log20190412" />
+    <None Remove="~\logs\mp-hubspot-sync-app.log20190409" />
   </ItemGroup>
 </Project>

@@ -114,11 +114,13 @@ namespace Crossroads.Service.HubSpot.Sync.Data.MP.Impl
         public IDictionary<string, List<CoreUpdateMpContactDto>> GetAuditedContactUpdates(DateTime lastSuccessfulSyncDateUtc)
         {
             const string storedProcedureName = "api_crds_get_mp_contact_updates_for_hubspot";
-            Log(storedProcedureName, lastSuccessfulSyncDateUtc, "Fetching MP contacts with recently updated data via stored proc.");
+            var lastSuccessfulSyncDateLocal = lastSuccessfulSyncDateUtc.ToLocalTime();
+            Log(storedProcedureName, lastSuccessfulSyncDateLocal, "Fetching MP contacts with recently updated data via stored proc.");
 
             try
             {
-                var parameters = new Dictionary<string, object> { { "@LastSuccessfulSyncDateUtc", lastSuccessfulSyncDateUtc } };
+                //
+                var parameters = new Dictionary<string, object> { { "@LastSuccessfulSyncDateLocal", lastSuccessfulSyncDateLocal } };
                 var data = FetchData(storedProcedureName, parameters);
                 var columnUpdates = data?.Select(jObject => _jsonSerializer.ToObject<CoreUpdateMpContactDto>(jObject)).ToList()
                                     ?? Enumerable.Empty<CoreUpdateMpContactDto>().ToList();

@@ -8,7 +8,7 @@ go
 
 -- gets a list of contact data updated after a given date
 create or alter procedure dbo.api_crds_get_mp_contact_updates_for_hubspot
-    @LastSuccessfulSyncDateUtc datetime
+    @LastSuccessfulSyncDateLocal datetime
 as
 
     -- each common table expression query definition's audit log data is grouped by the Ministry Platform database table of origin:
@@ -26,8 +26,8 @@ as
                                             MostRecentEmailChange.FieldName,
                                             MostRecentEmailChange.TableName
 
-                            from            dbo.crds_get_initial_field_changes('dp_Users', @LastSuccessfulSyncDateUtc) InitialEmail
-                            join            dbo.crds_get_most_recent_field_changes('dp_Users', @LastSuccessfulSyncDateUtc) MostRecentEmailChange
+                            from            dbo.crds_get_initial_field_changes('dp_Users', @LastSuccessfulSyncDateLocal) InitialEmail
+                            join            dbo.crds_get_most_recent_field_changes('dp_Users', @LastSuccessfulSyncDateLocal) MostRecentEmailChange
                             on              InitialEmail.RecordId = MostRecentEmailChange.RecordId
                             where           MostRecentEmailChange.FieldName = 'User_Name'
                             and             InitialEmail.FieldName = 'User_Name'
@@ -64,7 +64,7 @@ as
         from            dbo.vw_crds_audit_log AuditLog
         join            (   -- in the event multiple changes were made to a field between updates, we'll be diligent to grab only the last change
                             select          *
-                            from            dbo.crds_get_most_recent_field_changes('Contacts', @LastSuccessfulSyncDateUtc)
+                            from            dbo.crds_get_most_recent_field_changes('Contacts', @LastSuccessfulSyncDateLocal)
                             where           FieldName in ('Nickname', 'Last_Name', 'Marital_Status_ID', 'Gender_ID', 'Mobile_Phone')
                         ) MostRecentFieldChanges
         on              AuditLog.RecordId = MostRecentFieldChanges.RecordId
@@ -85,7 +85,7 @@ as
                         AuditLog.NewValue
 
         from            dbo.vw_crds_audit_log AuditLog
-        join            (select * from dbo.crds_get_most_recent_field_changes('Households', @LastSuccessfulSyncDateUtc) where FieldName in ('Congregation_ID', 'Home_Phone')) MostRecentFieldChanges
+        join            (select * from dbo.crds_get_most_recent_field_changes('Households', @LastSuccessfulSyncDateLocal) where FieldName in ('Congregation_ID', 'Home_Phone')) MostRecentFieldChanges
         on              AuditLog.RecordId = MostRecentFieldChanges.RecordId
         and             AuditLog.OperationDateTime = MostRecentFieldChanges.Updated
         and             AuditLog.FieldName = MostRecentFieldChanges.FieldName
@@ -101,7 +101,7 @@ as
                         AuditLog.NewValue
 
         from            dbo.vw_crds_audit_log AuditLog
-        join            (select * from dbo.crds_get_most_recent_field_changes('Addresses', @LastSuccessfulSyncDateUtc) where FieldName = 'Postal_Code') MostRecentFieldChanges
+        join            (select * from dbo.crds_get_most_recent_field_changes('Addresses', @LastSuccessfulSyncDateLocal) where FieldName = 'Postal_Code') MostRecentFieldChanges
         on              AuditLog.RecordId = MostRecentFieldChanges.RecordId
         and             AuditLog.OperationDateTime = MostRecentFieldChanges.Updated
         and             AuditLog.FieldName = MostRecentFieldChanges.FieldName

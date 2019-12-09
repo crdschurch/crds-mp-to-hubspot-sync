@@ -67,6 +67,7 @@ namespace Crossroads.Service.HubSpot.Sync.ApplicationServices.Services.Impl
                 // set job processing state; get last successful sync dates
                 _jobRepository.PersistActivityProgress(activityProgress = new ActivityProgress { ActivityState = ActivityState.Processing });
                 var operationDates = activity.PreviousOperationDates = _configurationService.GetLastSuccessfulOperationDates();
+
                 var ageGradeDeltaLog = default(ChildAgeAndGradeDeltaLogDto);
 
                 Util.TryCatchSwallow(() => { // running this in advance of the create process with the express purpose of avoiding create/update race conditions when we consume the results for update

@@ -146,6 +146,7 @@ More details will be available in the serial processing logs.");
                 for (int currentContactIndex = 0; currentContactIndex < hubSpotContacts.Length; currentContactIndex++)
                 {
                     var contact = hubSpotContacts[currentContactIndex];
+                    contact.Properties.RemoveAll(p => (p.Name == "community") && (p.Value == "Not site specific" || p.Value == null));
                     SerialUpdate(currentContactIndex, contact, hubSpotContacts.Length, run);
                     PumpTheBreaksEveryNRequestsToAvoid429Exceptions(currentContactIndex + 1);
                 }

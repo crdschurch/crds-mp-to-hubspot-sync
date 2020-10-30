@@ -7,6 +7,7 @@ using Crossroads.Service.HubSpot.Sync.Data.MongoDb.JobProcessing;
 using Crossroads.Service.HubSpot.Sync.Data.MongoDb.JobProcessing.Dto;
 using Microsoft.Extensions.Logging;
 using System;
+using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -146,6 +147,7 @@ More details will be available in the serial processing logs.");
                 for (int currentContactIndex = 0; currentContactIndex < hubSpotContacts.Length; currentContactIndex++)
                 {
                     var contact = hubSpotContacts[currentContactIndex];
+                    contact.Properties.RemoveAll(p => (p.Name == "community") && (p.Value == "Not site specific" || p.Value == null || p.Value == ""));
                     SerialUpdate(currentContactIndex, contact, hubSpotContacts.Length, run);
                     PumpTheBreaksEveryNRequestsToAvoid429Exceptions(currentContactIndex + 1);
                 }
